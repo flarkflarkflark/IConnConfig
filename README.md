@@ -1,9 +1,11 @@
 # iconnconfig
-**Also find this repo at https://codeberg.org/dehnhardt/IConnConfig**
 
 Linux based configuration utility for IConnectivity interfaces. MIDI and Audio configuration is implemented.
 Since the SysEx interface is very well documented by iConnectivity, most of the functionality is implemented.
 The extensions (Command Version Number 2) - presumably for the newer devices - are not implemented, because such a device is not available to me.
+
+# newer devices
+This utility supports devices with the command version 1.0. For newer devices there is an command line utility here on codeberg: https://codeberg.org/pmatilai/mioctl
 
 ## Implemented
 * Device detection
