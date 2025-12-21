@@ -18,7 +18,9 @@
 #include <cerrno>   // for errno
 #include <csignal>  // for sigaction()
 #include <cstring>  // for strerror()
+#ifndef _WIN32
 #include <unistd.h> // for pipe()
+#endif
 
 #include <QCloseEvent>
 #include <QDesktopWidget>

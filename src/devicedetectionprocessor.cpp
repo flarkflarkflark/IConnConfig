@@ -10,7 +10,9 @@
 #include <QDebug>
 #include <QSettings>
 #include <iomanip>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 DeviceDetectionProcessor::DeviceDetectionProcessor(QWidget *gui) : m_pGui(gui) {
 	if (Configuration::getInstance().getMidiDeviceDetection())

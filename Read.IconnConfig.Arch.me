@@ -1,0 +1,83 @@
+Read.IconnConfig.Arch — instructies voor Arch / CI build
+
+Doel
+- Handige, kopieerbare instructies om `iConnConfig` op Arch Linux te bouwen (lokaal of CI).
+- Gebruik dit bestand in VS Code op je agent (sleep / open) en voer de commando's uit.
+
+Voorwaarden
+- Zorg dat de broncode van `iConnConfig` op de agent staat.
+- Zorg dat een sibling map `../PKControls` bestaat (of laat scripts het klonen).
+
+Optie A — Direct bouwen op Arch (aanbevolen)
+1. Open een terminal in de projectroot (map met `iConnConfig.pro`).
+2. Installeer afhankelijkheden:
+
+```bash
+sudo pacman -Syu --needed base-devel qt5-base qt5-tools alsa-lib libusb git
+```
+
+3. Controleer `PKControls`:
+```bash
+# als ontbrekend, cloneer als sibling
+if [ ! -d ../PKControls ]; then
+  git clone https://codeberg.org/dehnhardt/PKControls.git ../PKControls
+fi
+```
+
+4. Build met `makepkg` (gebruik `PKGBUILD`):
+```bash
+# in projectroot
+makepkg -si
+```
+
+5. Fouten oplossen: lees `makepkg` output, installeer ontbrekende makedepends via pacman en herhaal.
+
+Optie B — Direct qmake / make (geen pakker)
+```bash
+qmake iConnConfig.pro PREFIX=/usr
+make -j$(nproc)
+# binaire (iconnconfig) staat in de tree of in build dir
+```
+
+Optie C — Gebruik Docker (veilige build op niet-Arch host)
+- Script toegevoegd: `docker-build-arch.sh`
+- Voorbeeld (PowerShell):
+```powershell
+# geef absoluut pad naar de repo
+.\docker-build-arch.sh 'P:\GIT\AUDIO4C\IConnConfig'
+```
+- Of handmatig in Linux/macOS:
+```bash
+./docker-build-arch.sh /absolute/path/to/IConnConfig
+```
+- Het script start een Arch-container, installeert dependencies en runt `makepkg`.
+
+GitHub Actions (CI)
+- Er is een workflow `.github/workflows/arch-docker-build.yml` die `makepkg` in een Arch Docker image draait.
+- Stappen om CI te gebruiken:
+  1. Fork de repo naar je GitHub-account.
+  2. Push je wijzigingen (inclusief deze workflows) naar je fork.
+  3. Open een Pull Request of push naar `main`/`master` — Actions starten automatisch.
+  4. Artefacten (package) worden geüpload via de workflow.
+
+Caveats / Tips
+- `PKGBUILD` gebruikt nu `sha256sums=('SKIP')` voor lokale iteratie; vervang door echte checksums voordat je publiceert.
+- `makepkg` kan interactief vragen; `--noconfirm` is gebruikt in CI but be cautious locally.
+- Als build faalt door ontbrekende Qt dev files: controleer of `qt5-base` en `qt5-tools` juist zijn geïnstalleerd.
+- Als `qmake` niet naar Qt5 wijst, probeer `qmake-qt5` of `qmake -qt=5`.
+
+Probleemoplossing snel
+- ontbrekende headers / libs: installeer het bijbehorende `-dev` of `-devel` pakket (Debian/Arch namen verschillen).
+- PKControls errors: zorg dat `../PKControls` aanwezig is of clone eerst.
+- Als `makepkg` klaagt over sleutelring in een schone container: voer `pacman-key --init` en `pacman-key --populate archlinux`.
+
+Wat je nu kunt doen
+- Open `Read.IconnConfig.Arch.me` in VS Code op de agent en voer de stappen uit onder "Optie A" of "Optie C".
+- Als je wilt, kan ik het `PKGBUILD` verder detailleren (bestandslijst, checksums) of een `.SRCINFO` genereren voor AUR.
+
+Kort en krachtig: wil je dat ik nu help met:
+- (1) het vullen van checksums en volledige `PKGBUILD` metadata, of
+- (2) een `.SRCINFO` voor AUR, of
+- (3) een MSVC-based Windows Actions workflow?
+
+Kies 1, 2 of 3 of voer de instructies lokaal uit en rapporteer errors — ik help met fixes.

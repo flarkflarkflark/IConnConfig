@@ -5,7 +5,9 @@
 #include <QPainter>
 #include <QString>
 #include <iostream>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 PKSlider::PKSlider(QWidget *parent) : QSlider(parent) {
 	connect(this, &QAbstractSlider::valueChanged, this,

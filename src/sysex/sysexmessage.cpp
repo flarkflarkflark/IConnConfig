@@ -5,7 +5,9 @@
 
 #include <algorithm>
 #include <iostream>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 /*
  * Structure and naming od sysex data

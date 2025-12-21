@@ -1,0 +1,41 @@
+name: Windows (MSVC) Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-msvc:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt (MSVC)
+        uses: jurplel/install-qt@v2
+        with:
+          version: '5.15.2'
+          host: 'windows'
+          target: 'msvc2019_64'
+          dir: 'C:\\Qt'
+
+      - name: Ensure PKControls
+        run: |
+          if [ ! -d ../PKControls ]; then
+            git clone https://codeberg.org/dehnhardt/PKControls.git ../PKControls || true
+          fi
+        shell: bash
+
+      - name: Build with MSVC (qmake + nmake)
+        shell: cmd
+        run: |
+          set PATH=%QTDIR%\bin;%PATH%
+          qmake iConnConfig.pro PREFIX=/usr
+          nmake
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: iconnconfig-windows-msvc
+          path: |
+            *.exe
+            **/*.exe

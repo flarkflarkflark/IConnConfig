@@ -1,0 +1,40 @@
+name: Arch Linux (Docker) PKGBUILD
+
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build-arch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure PKControls
+        run: |
+          if [ ! -d ../PKControls ]; then
+            git clone https://codeberg.org/dehnhardt/PKControls.git ../PKControls || true
+          fi
+
+      - name: Build package inside Arch container
+        run: |
+          docker run --rm -v "${{ github.workspace }}":/build -w /build archlinux:latest /bin/bash -lc '
+            set -e
+            pacman -Sy --noconfirm --needed base-devel git qt5-base qt5-tools alsa-lib libusb
+            # pacman keyring init may be required on fresh containers
+            pacman-key --init || true
+            pacman-key --populate archlinux || true
+            cd /build
+            # allow makepkg to run as root in CI environment (unsafe but common for CI)
+            export MAKEFLAGS="-j$(nproc)"
+            makepkg -si --noconfirm || true
+          '
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: iconnconfig-arch
+          path: |
+            *.pkg.tar.zst
+            *.pkg.tar.gz
+            *.tar.zst

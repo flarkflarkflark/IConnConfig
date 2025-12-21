@@ -1,0 +1,19 @@
+pkgname = iconnconfig
+pkgver = 1.0.0
+pkgrel = 1
+pkgdesc = iConnConfig - device configuration GUI
+url = https://codeberg.org/dehnhardt/iConnConfig
+arch = x86_64
+license = GPL
+depends = qt5-base
+depends = alsa-lib
+depends = libusb
+makedepends = qt5-base
+makedepends = qt5-tools
+makedepends = pkgconfig
+makedepends = base-devel
+makedepends = git
+source = .
+sha256sums = SKIP
+
+# build and package functions are provided in PKGBUILD

@@ -32,7 +32,9 @@
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 Device::Device(unsigned int inPortNumber, unsigned int outPortNumber,
 			   unsigned long serialNumber, unsigned int productId) {
