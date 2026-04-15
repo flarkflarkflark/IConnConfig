@@ -61,6 +61,8 @@ class SysExMessage {
 	int execute();
 	void setDebug(bool debug);
 	bool getDebug();
+	static void setStructuredLoggingEnabled(bool enabled);
+	static bool isStructuredLoggingEnabled();
 	void printRawData();
 	unsigned int getCommandNumber();
 	bool isWriteCommand();
@@ -123,6 +125,7 @@ class SysExMessage {
 	unsigned char m_iCommandVersionNumber = 0;
 
 	bool debug = false;
+	static bool sStructuredLoggingEnabled;
 };
 
 #endif // SYSEXMESSAGE_H

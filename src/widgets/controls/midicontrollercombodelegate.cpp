@@ -6,8 +6,6 @@
 #include <QString>
 #include <QWidget>
 
-#include <iostream>
-
 MidiControllerComboDelegate::MidiControllerComboDelegate(QObject *parent)
 	: QStyledItemDelegate(parent) {
 	hashedData.insert(0, "Bank Select");
@@ -75,8 +73,6 @@ MidiControllerComboDelegate::MidiControllerComboDelegate(QObject *parent)
 QWidget *MidiControllerComboDelegate::createEditor(
 	QWidget *parent, const QStyleOptionViewItem & /* option */,
 	const QModelIndex & /* index */) const {
-
-	std::cout << "create Editor" << std::endl;
 	QComboBox *comboBox = createCbEditor(parent);
 	connect(comboBox, QOverload<int>::of(&QComboBox::activated), this,
 			&MidiControllerComboDelegate::commitAndCloseEditor);

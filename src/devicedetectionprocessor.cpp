@@ -155,6 +155,8 @@ unsigned long DeviceDetectionProcessor::detectDevices() {
 							MIDI::byteJoin7bit(message, 5, 2));
 						Device *device =
 							new Device(j, i, serialNumber, productId);
+						device->setDetectedMidiPortNames(currentInputPortName,
+														 currentOutPortName);
 						devices->insert(
 							std::pair<long, Device *>(serialNumber, device));
 						std::cout << "... and added to list of devices"

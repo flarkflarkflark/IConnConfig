@@ -145,6 +145,8 @@ SOURCES +=\
     src/sysex/getaudiocontroldetailvalue.cpp \
     src/sysex/retsetaudiocontroldetailvalue.cpp \
     src/sysex/retsetaudiocontrolparm.cpp \
+    src/sysex/getaudioclockparm.cpp \
+    src/sysex/retsetaudioclockparm.cpp \
     src/sysex/portsysexmessage.cpp \
     src/widgets/audiocontrolparmwidget.cpp \
     src/widgets/audiocontrolparmselectorwidget.cpp \
@@ -266,6 +268,8 @@ HEADERS  += \
     src/sysex/getaudiocontroldetailvalue.h \
     src/sysex/retsetaudiocontroldetailvalue.h \
     src/sysex/retsetaudiocontrolparm.h \
+    src/sysex/getaudioclockparm.h \
+    src/sysex/retsetaudioclockparm.h \
     src/sysex/portsysexmessage.h \
     src/widgets/audiocontrolparmwidget.h \
     src/widgets/audiocontrolparmselectorwidget.h \

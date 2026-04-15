@@ -1,0 +1,67 @@
+AUDIO4c Clock Comparative Analysis (read-only)
+sample_rate_decode_status=experimental_unverified
+file_count=2
+file_1.path=diagnostics/audio4c-clock-20260415-202112.txt
+file_1.external_known_state=not_provided
+file_1.unique_payloads_found=1
+file_1.payload_stable_within_file=true
+file_1.selected_payload=01 01 03 01 01 01 00 02 02 01 00 03 02 02 00
+file_2.path=diagnostics/audio4c-clock-20260415-202112-copy.txt
+file_2.external_known_state=not_provided
+file_2.unique_payloads_found=1
+file_2.payload_stable_within_file=true
+file_2.selected_payload=01 01 03 01 01 01 00 02 02 01 00 03 02 02 00
+
+[Byte Offset Table]
+offset_0: f1=0X01 f2=0X01 status=stable
+offset_1: f1=0X01 f2=0X01 status=stable
+offset_2: f1=0X03 f2=0X03 status=stable
+offset_3: f1=0X01 f2=0X01 status=stable
+offset_4: f1=0X01 f2=0X01 status=stable
+offset_5: f1=0X01 f2=0X01 status=stable
+offset_6: f1=0X00 f2=0X00 status=stable
+offset_7: f1=0X02 f2=0X02 status=stable
+offset_8: f1=0X02 f2=0X02 status=stable
+offset_9: f1=0X01 f2=0X01 status=stable
+offset_10: f1=0X00 f2=0X00 status=stable
+offset_11: f1=0X03 f2=0X03 status=stable
+offset_12: f1=0X02 f2=0X02 status=stable
+offset_13: f1=0X02 f2=0X02 status=stable
+offset_14: f1=0X00 f2=0X00 status=stable
+stable_offset_count=15
+differing_offset_count=0
+stable_offsets=0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
+differing_offsets=none
+
+[Hypothesis Groupings]
+warning=hypothesis_only_not_a_definitive_protocol_map
+hypothesis_a.offsets_1_2=clock_source_code_candidate + sample_rate_code_candidate
+hypothesis_b.offsets_3_plus_triplets=source/rate/lock tuples
+file_1.hypothesis_a_pair_1_2=0X01 0X03
+file_1.hypothesis_b_triplet_count=4
+file_1.hypothesis_triplet_1.offset_start=3
+file_1.hypothesis_triplet_1.bytes=0X01 0X01 0X01
+file_1.hypothesis_triplet_2.offset_start=6
+file_1.hypothesis_triplet_2.bytes=0X00 0X02 0X02
+file_1.hypothesis_triplet_3.offset_start=9
+file_1.hypothesis_triplet_3.bytes=0X01 0X00 0X03
+file_1.hypothesis_triplet_4.offset_start=12
+file_1.hypothesis_triplet_4.bytes=0X02 0X02 0X00
+file_2.hypothesis_a_pair_1_2=0X01 0X03
+file_2.hypothesis_b_triplet_count=4
+file_2.hypothesis_triplet_1.offset_start=3
+file_2.hypothesis_triplet_1.bytes=0X01 0X01 0X01
+file_2.hypothesis_triplet_2.offset_start=6
+file_2.hypothesis_triplet_2.bytes=0X00 0X02 0X02
+file_2.hypothesis_triplet_3.offset_start=9
+file_2.hypothesis_triplet_3.bytes=0X01 0X00 0X03
+file_2.hypothesis_triplet_4.offset_start=12
+file_2.hypothesis_triplet_4.bytes=0X02 0X02 0X00
+
+[External Known State Correlation]
+file_1.external_state_rate=unknown
+file_2.external_state_rate=unknown
+distinct_external_state_rates=0
+correlation_status=insufficient_known_rate_labels
+sample_rate_interpretation=unknown_until_comparative_variation
+instruction=To identify sample-rate byte(s), collect dumps at known hardware rates: 44100, 48000, 96000, then run --compare-audio4c-clock.

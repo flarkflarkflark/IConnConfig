@@ -4,8 +4,76 @@
 #include "protocolexception.h"
 
 #include <algorithm>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <unistd.h>
+
+namespace {
+int parseCommandId(BYTE_VECTOR *message) {
+	if (!message || message->size() < 16)
+		return -1;
+	return static_cast<int>(MIDI::byteJoin7bit(message, 14, 2) & 1023);
+}
+
+int parseTransactionId(BYTE_VECTOR *message) {
+	if (!message || message->size() < 14)
+		return -1;
+	return static_cast<int>(MIDI::byteJoin7bit(message, 12, 2));
+}
+
+const char *ackResultName(int code) {
+	switch (code) {
+	case SysExMessage::COMMAND_ACCEPTED:
+		return "COMMAND_ACCEPTED";
+	case SysExMessage::UNKNOWN_COMMAND:
+		return "UNKNOWN_COMMAND";
+	case SysExMessage::MALFORMED_MESSAGE:
+		return "MALFORMED_MESSAGE";
+	case SysExMessage::COMMAND_FAILED:
+		return "COMMAND_FAILED";
+	default:
+		return "UNKNOWN_ACK_CODE";
+	}
+}
+
+std::string parseAckDetails(BYTE_VECTOR *message) {
+	if (!message || message->size() < Device::DATA_OFFSET)
+		return "ack=n/a";
+	if (parseCommandId(message) != ACK)
+		return "ack=n/a";
+	const long dataLength = MIDI::byteJoin7bit(
+		message, Device::DATA_LENGTH_OFFSET, Device::DATA_LENGTH_LENGTH);
+	const size_t codeIndex = static_cast<size_t>(Device::DATA_OFFSET + 2);
+	if (dataLength >= 3 && codeIndex < message->size()) {
+		const int code = static_cast<int>(message->at(codeIndex));
+		std::ostringstream oss;
+		oss << "ack=" << ackResultName(code) << "(" << code << ")";
+		return oss.str();
+	}
+	return "ack=incomplete";
+}
+
+void logSysexFrame(const char *direction, BYTE_VECTOR *message) {
+	const int commandId = parseCommandId(message);
+	const Command command =
+		commandId >= 0 ? static_cast<Command>(commandId) : Command::CMD_ERROR;
+	const int transactionId = parseTransactionId(message);
+	std::ostringstream oss;
+	oss << "[SysEx " << direction << "] "
+		<< "cmd=0x" << std::hex << std::setw(2) << std::setfill('0')
+		<< (commandId >= 0 ? commandId : 0) << std::dec << " ("
+		<< commandToString(command) << ")"
+		<< ", tid="
+		<< (transactionId >= 0 ? std::to_string(transactionId) : std::string("?"));
+	if (std::string(direction) == "RX")
+		oss << ", " << parseAckDetails(message);
+	oss << ", raw=" << MIDI::printMessageToHexString(message);
+	std::cout << oss.str() << std::endl;
+}
+} // namespace
+
+bool SysExMessage::sStructuredLoggingEnabled = false;
 
 /*
  * Structure and naming od sysex data
@@ -170,10 +238,31 @@ void SysExMessage::printMessage() {
 	std::cout << "Direction: " << (isWriteCommand() ? "write" : "read") << "\n";
 }
 
+void SysExMessage::setStructuredLoggingEnabled(bool enabled) {
+	sStructuredLoggingEnabled = enabled;
+}
+
+bool SysExMessage::isStructuredLoggingEnabled() {
+	return sStructuredLoggingEnabled;
+}
+
 int SysExMessage::execute() {
 	if (m_pDevice == nullptr)
 		return -1;
 	BYTE_VECTOR *message = getMIDISysExMessage();
+	if (m_pDevice->isReadOnlyMode() && isMutatingCommand(m_Command)) {
+		std::ostringstream oss;
+		oss << "[SysEx BLOCKED] cmd=0x" << std::hex << std::setw(2)
+			<< std::setfill('0') << static_cast<int>(m_Command) << std::dec
+			<< " (" << commandToString(m_Command)
+			<< "), reason=read-only experimental mode";
+		std::cout << oss.str() << std::endl;
+		delete message;
+		throw new ProtocolException(ProtocolException::ACK_COMMAND_FAILED,
+									m_pDevice);
+	}
+	if (isStructuredLoggingEnabled())
+		logSysexFrame("TX", message);
 	if (debug) {
 		printMessage();
 		MIDI::printMessage(message);
@@ -183,6 +272,8 @@ int SysExMessage::execute() {
 		BYTE_VECTOR *answerMessage = nullptr;
 		answerMessage = m_pDevice->retrieveSysex();
 		if (answerMessage != nullptr) {
+			if (isStructuredLoggingEnabled())
+				logSysexFrame("RX", answerMessage);
 			Command cmd = parseAnswer(answerMessage);
 			if (cmd == CMD_ERROR)
 				throw(new ProtocolException(ProtocolException::UNKNOWN));
@@ -223,8 +314,7 @@ unsigned int SysExMessage::getCommandNumber() {
 }
 
 bool SysExMessage::isWriteCommand() {
-	long commandBytes = MIDI::byteJoin7bit(m_pCommandData);
-	return (commandBytes & 80192) == 1;
+	return isMutatingCommand(m_Command);
 }
 
 SysExMessage *SysExMessage::getAnswer() { return m_pAnswer.get(); }

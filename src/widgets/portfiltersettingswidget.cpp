@@ -225,11 +225,8 @@ QVariant MidiControllerFilterTM::data(const QModelIndex &index,
 	MIDIControllerFilter *midiControllerFilter = m_ppMidiControllerFilter[row];
 	switch (role) {
 	case Qt::DisplayRole:
-		if (index.column() == 0) {
-			std::cout << "Model - controller number: "
-					  << midiControllerFilter->midiContollerNumber << std::endl;
+		if (index.column() == 0)
 			return midiControllerFilter->midiContollerNumber;
-		}
 		break;
 	case Qt::CheckStateRole:
 		if (index.column() == 1) {

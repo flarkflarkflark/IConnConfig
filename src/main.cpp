@@ -41,6 +41,39 @@ int main(int argc, char *argv[]) {
 		QCoreApplication::translate("main", "filename to read settings from."),
 		"filename");
 	parser->addOption(filenameOption);
+	QCommandLineOption dumpDiagnosticsOption(
+		QStringList() << "dump-device-diagnostics",
+		QCoreApplication::translate(
+			"main",
+			"Dump diagnostics for the selected device after opening the GUI."));
+	parser->addOption(dumpDiagnosticsOption);
+	QCommandLineOption dumpAudio4cClockOption(
+		QStringList() << "dump-audio4c-clock",
+		QCoreApplication::translate(
+			"main",
+			"Dump AUDIO4c clock investigation diagnostics and print a clock "
+			"summary to stdout."));
+	parser->addOption(dumpAudio4cClockOption);
+	QCommandLineOption compareAudio4cClockOption(
+		QStringList() << "compare-audio4c-clock",
+		QCoreApplication::translate(
+			"main",
+			"Compare clock payloads across diagnostics files. Usage: "
+			"--compare-audio4c-clock FILE1 FILE2 [FILE3...]"));
+	parser->addOption(compareAudio4cClockOption);
+	QCommandLineOption compareAudio4cGlobalOption(
+		QStringList() << "compare-audio4c-global",
+		QCoreApplication::translate(
+			"main",
+			"Compare global-audio payloads across diagnostics files. Usage: "
+			"--compare-audio4c-global FILE1 FILE2 [FILE3...]"));
+	parser->addOption(compareAudio4cGlobalOption);
+	parser->addPositionalArgument(
+		"files",
+		QCoreApplication::translate(
+			"main",
+			"Diagnostics files for --compare-audio4c-clock/--compare-audio4c-global "
+			"mode."));
 
 	// Process the actual command line arguments given by the user
 	parser->process(app);

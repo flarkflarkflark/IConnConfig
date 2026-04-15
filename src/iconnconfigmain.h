@@ -12,6 +12,8 @@
 #include <QToolBar>
 #include <QTranslator>
 
+class QAction;
+
 namespace Ui {
 class MioMain;
 }
@@ -56,6 +58,12 @@ class MioMain : public QMainWindow {
 	void clearDocWidgets();
 	void saveRestore(SaveRestore::SaveResstoreId saveRestoreId);
 	void addDeviceToolButtons();
+	void showExperimentalWarningIfNeeded();
+	QString dumpDeviceDiagnostics();
+	QString dumpDiagnosticsToFile(const QString &content,
+								  const QString &filePrefix);
+	QString compareAudio4cClockDiagnostics(const QStringList &filePaths) const;
+	QString compareAudio4cGlobalDiagnostics(const QStringList &filePaths) const;
 
 	void reinitDevice(int ret);
 	void reinitDevice();
@@ -74,6 +82,13 @@ class MioMain : public QMainWindow {
 	QString m_sTitle;
 	QString *m_sConfigurationFile = nullptr;
 	Device *m_pCurrentDevice = nullptr;
+	QAction *m_pActionDumpDiagnostics = nullptr;
+	bool m_bWarnedExperimentalMode = false;
+	bool m_bDumpDiagnosticsOnStartup = false;
+	bool m_bDumpAudio4cClockOnStartup = false;
+	bool m_bCompareAudio4cClockOnStartup = false;
+	bool m_bCompareAudio4cGlobalOnStartup = false;
+	QStringList m_compareAudio4cClockFiles;
 
 	QSettings *m_pConfiguration = nullptr;
 
@@ -100,6 +115,9 @@ class MioMain : public QMainWindow {
 	void restoreFromDevice();
 	void resetToFactoryDefaults();
 	void openAboutDialog();
+	void on_actionDumpDeviceDiagnostics_triggered();
+	void runCompareAudio4cClockFromStartup();
+	void runCompareAudio4cGlobalFromStartup();
 
 #ifdef __LINUX_SESSION_MANAGEMENT__
 

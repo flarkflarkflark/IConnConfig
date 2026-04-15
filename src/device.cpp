@@ -28,11 +28,27 @@
 #include "sysex/retsetmixerportparm.h"
 
 #include <array>
+#include <cctype>
 #include <cstring>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <unistd.h>
+
+namespace {
+std::string toLowerAscii(const std::string &value) {
+	std::string lower = value;
+	std::transform(lower.begin(), lower.end(), lower.begin(),
+				   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+	return lower;
+}
+
+bool hasAudio4cTag(const std::string &value) {
+	const std::string lower = toLowerAscii(value);
+	return (lower.find("audio4c") != std::string::npos) ||
+		   (lower.find("audio 4c") != std::string::npos);
+}
+} // namespace
 
 Device::Device(unsigned int inPortNumber, unsigned int outPortNumber,
 			   unsigned long serialNumber, unsigned int productId) {
@@ -41,7 +57,7 @@ Device::Device(unsigned int inPortNumber, unsigned int outPortNumber,
 	this->m_pSerialNumber =
 		new MIDISysexValue(static_cast<long>(serialNumber), 5);
 	this->m_pProductId = new MIDISysexValue(productId, 2);
-	this->debug = true;
+	this->debug = false;
 	this->m_pInformationTree = new DeviceStructure;
 	try {
 		connect();
@@ -75,6 +91,8 @@ Device::~Device() {
 	delete m_pFullHeader;
 	delete m_pSerialNumber;
 	delete m_pProductId;
+	delete m_pLastSendMessage;
+	delete m_pLastRetrieveMessage;
 	delete midiin;
 	delete midiout;
 	delete m_pDeviceHeader;
@@ -121,7 +139,8 @@ BYTE_VECTOR *Device::getFullHeader() {
 }
 
 bool Device::setupMidi() {
-	std::cout << "connect" << std::endl;
+	if (debug)
+		std::cout << "connect" << std::endl;
 	std::stringstream nameIn;
 	std::stringstream nameOut;
 	if (!midiin) {
@@ -133,6 +152,8 @@ bool Device::setupMidi() {
 	if (!midiin->isPortOpen())
 		try {
 			midiin->openPort(m_iInPortNumber);
+			if (m_sDetectedInputPortName.empty())
+				m_sDetectedInputPortName = midiin->getPortName(m_iInPortNumber);
 		} catch (...) {
 			throw;
 		}
@@ -146,6 +167,9 @@ bool Device::setupMidi() {
 	if (!midiout->isPortOpen())
 		try {
 			midiout->openPort(m_iOutPortNumber);
+			if (m_sDetectedOutputPortName.empty())
+				m_sDetectedOutputPortName =
+					midiout->getPortName(m_iOutPortNumber);
 		} catch (...) {
 			throw;
 		}
@@ -159,7 +183,8 @@ void Device::sentSysex(BYTE_VECTOR *data) {
 }
 
 void Device::disconnect() {
-	std::cout << "disconnect" << std::endl;
+	if (debug)
+		std::cout << "disconnect" << std::endl;
 	if (midiin) {
 		if (midiin->isPortOpen())
 			midiin->closePort();
@@ -288,7 +313,7 @@ bool Device::queryDeviceInfo() {
 
 	std::shared_ptr<GetCommandList> getCommandList =
 		std::make_shared<GetCommandList>(this);
-	getCommandList->setDebug(true);
+	getCommandList->setDebug(debug);
 	try {
 		m_pCommands = std::dynamic_pointer_cast<RetCommandList>(
 			getCommandList->querySmart());
@@ -303,7 +328,7 @@ bool Device::queryDeviceInfo() {
 	if (m_pCommands->isCommandSupported(Command::GET_INFO_LIST)) {
 		std::shared_ptr<GetInfoList> getInfoList =
 			std::make_shared<GetInfoList>(this);
-		getInfoList->setDebug(true);
+		getInfoList->setDebug(debug);
 		try {
 			m_pRetInfoList = std::dynamic_pointer_cast<RetInfoList>(
 				getInfoList->querySmart());
@@ -366,7 +391,7 @@ bool Device::queryDeviceInfo() {
 	if (m_pCommands->isCommandSupported(Command::GET_AUDIO_GLOBAL_PARM)) {
 		std::unique_ptr<GetAudioGlobalParm> getAudioGlobalParam =
 			std::make_unique<GetAudioGlobalParm>(this);
-		getAudioGlobalParam->setDebug(true);
+		getAudioGlobalParam->setDebug(debug);
 		m_pGlobalAudioParam = std::dynamic_pointer_cast<RetSetAudioGlobalParm>(
 			getAudioGlobalParam->querySmart());
 	}
@@ -374,6 +399,7 @@ bool Device::queryDeviceInfo() {
 	}
 	if (m_pCommands->isCommandSupported(Command::GET_MIXER_OUTPUT_CONTROL)) {
 	}
+	refreshSupportProfile();
 	return true;
 }
 
@@ -610,7 +636,7 @@ Device::getAudioChannelNames(AudioPortId audioPortId,
 
 bool Device::isDeviceValid() {
 	GetDevice *getDevice = new GetDevice(this);
-	getDevice->setDebug(true);
+	getDevice->setDebug(debug);
 	int ret = -3;
 	for (int i = 0; i < WAIT_LOOPS; ++i) {
 		ret = getDevice->execute();
@@ -651,6 +677,14 @@ void Device::setDeviceInformation(std::string modelName,
 								  std::string deviceName) {
 	this->m_sModelName = modelName;
 	this->m_sDeviceName = deviceName;
+	refreshSupportProfile();
+}
+
+void Device::setDetectedMidiPortNames(const std::string &inputPortName,
+									  const std::string &outputPortName) {
+	m_sDetectedInputPortName = inputPortName;
+	m_sDetectedOutputPortName = outputPortName;
+	refreshSupportProfile();
 }
 
 std::vector<unsigned char> *Device::getLastSendMessage() const {
@@ -662,11 +696,21 @@ std::vector<unsigned char> *Device::getLastRetrieveMessage() const {
 }
 
 void Device::setLastSendMessage(std::vector<unsigned char> *value) {
-	m_pLastSendMessage = value;
+	if (m_pLastSendMessage != nullptr) {
+		delete m_pLastSendMessage;
+		m_pLastSendMessage = nullptr;
+	}
+	if (value != nullptr)
+		m_pLastSendMessage = new BYTE_VECTOR(*value);
 }
 
 void Device::setLastRetrieveMessage(std::vector<unsigned char> *value) {
-	m_pLastRetrieveMessage = value;
+	if (m_pLastRetrieveMessage != nullptr) {
+		delete m_pLastRetrieveMessage;
+		m_pLastRetrieveMessage = nullptr;
+	}
+	if (value != nullptr)
+		m_pLastRetrieveMessage = new BYTE_VECTOR(*value);
 }
 
 bool Device::getDebug() const { return debug; }
@@ -688,6 +732,15 @@ bool Device::loadConfigurationFromDevice() {
 	getCommands();
 
 	return true;
+}
+
+void Device::refreshSupportProfile() {
+	const bool looksLikeAudio4c =
+		hasAudio4cTag(m_sDetectedInputPortName) ||
+		hasAudio4cTag(m_sDetectedOutputPortName) || hasAudio4cTag(m_sModelName) ||
+		hasAudio4cTag(m_sDeviceName) || hasAudio4cTag(m_sModelNumber);
+	m_bExperimentalAudio4c = looksLikeAudio4c;
+	m_bReadOnlyMode = looksLikeAudio4c;
 }
 
 BYTE_VECTOR *Device::manufacturerHeader = nullptr;
