@@ -49,6 +49,7 @@ class AudioChannelFeatureWidget : public QFrame {
 	void setValues(std::shared_ptr<RetSetAudioControlDetailValue>
 					   m_pRetSetAudioControlDetailValue);
 	void createConnections();
+	bool isWritable() const;
 
   signals:
 	void linkStatusChanged(int detailId, bool status);
@@ -63,6 +64,8 @@ class AudioChannelFeatureWidget : public QFrame {
 
   public slots:
 	void changeLinkStatus(unsigned int detailId, bool enabled);
+	/** Shows the link state without writing it to the device. */
+	void showLinkStatus(bool enabled);
 	void changePhantomPowerStatus(bool enabled);
 	void changeHighImpedanceStatus(bool enabled);
 	void changeMuteStatus(bool enabled);

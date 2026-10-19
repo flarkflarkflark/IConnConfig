@@ -1,10 +1,12 @@
 #include "audioportparmwidget.h"
 #include "../iconnconfigmain.h"
 #include "centralwidget.h"
+#include "guisysexguard.h"
 #include "portdisplayhelper.h"
 #include "ui_audioportparmwidget.h"
 
 #include <QMessageBox>
+#include <QSignalBlocker>
 
 AudioPortParmWidget::AudioPortParmWidget(
 	std::shared_ptr<RetSetAudioPortParm> retSetAudioPortParm, QWidget *parent)
@@ -109,6 +111,9 @@ void AudioPortParmWidget::setData() {
 void AudioPortParmWidget::setCurrentAudioConfiguration() {
 	AudioPortConfiguration *audioPortConfiguration =
 		m_pRetSetAudioPortParm->getCurrentAudioConfiguration();
+	// repopulating the combo boxes must not look like a user edit
+	const QSignalBlocker inBlocker(ui->m_pCbNumberInputChannels);
+	const QSignalBlocker outBlocker(ui->m_pCbNumberOutputChannels);
 	ui->m_pCbNumberInputChannels->clear();
 	for (unsigned int i = audioPortConfiguration->minInputChannelsSupported;
 		 i <= audioPortConfiguration->maxInputChannelsSupported; i++)
@@ -131,6 +136,17 @@ void AudioPortParmWidget::setCurrentAudioConfiguration() {
 		  audioPortConfiguration->maxOutputChannelsSupported));
 	ui->m_pEditAudioConfigString->setText(
 		m_pRetSetAudioPortParm->getCurrentAudioConfigurationString().c_str());
+	if (!isWritable()) {
+		ui->m_pCbNumberInputChannels->setEnabled(false);
+		ui->m_pCbNumberOutputChannels->setEnabled(false);
+	}
+}
+
+bool AudioPortParmWidget::isWritable() const {
+	Device *device = m_pRetSetAudioPortParm
+						 ? m_pRetSetAudioPortParm->getDevice()
+						 : nullptr;
+	return device && !device->isWriteGuardEnabled();
 }
 
 void AudioPortParmWidget::setAudioDeviceParm(
@@ -159,6 +175,15 @@ void AudioPortParmWidget::createConnections() {
 	connect(w, &CentralWidget::changeAudioConfig, this,
 			&AudioPortParmWidget::audioConfigurationChanged);
 
+	if (!isWritable()) {
+		// display only: no write handlers, nothing to edit
+		ui->m_pChbIOSEnabled->setEnabled(false);
+		ui->m_pChbPcEnabled->setEnabled(false);
+		ui->m_pCbNumberInputChannels->setEnabled(false);
+		ui->m_pCbNumberOutputChannels->setEnabled(false);
+		ui->m_pEditPortName->setReadOnly(true);
+		return;
+	}
 	connect(ui->m_pChbIOSEnabled, &QCheckBox::stateChanged, [=](int state) {
 		m_pRetSetAudioPortParm->setPortIOSEnabled(state == 2);
 		m_pUpdateTimer->start(1000);
@@ -194,7 +219,9 @@ void AudioPortParmWidget::createConnections() {
 
 	connect(m_pUpdateTimer, &QTimer::timeout, [=] {
 		m_pRetSetAudioPortParm->setDebug(false);
-		m_pRetSetAudioPortParm->execute();
+		GuiSysex::run("Updating audio port", [&]() {
+			m_pRetSetAudioPortParm->execute();
+		});
 	});
 }
 

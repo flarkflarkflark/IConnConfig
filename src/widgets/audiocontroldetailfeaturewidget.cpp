@@ -49,7 +49,7 @@ void AudioControlDetailFeatureWidget::getDetails() {
 				if (i % 2 == 0) {
 					if (lastLinkStatus ||
 						audiochannelFeatureWidget->getLinkStatus())
-						linkStatusChanged(i, true);
+						applyLinkStatus(i, true, false); // display only
 				}
 				lastLinkStatus = audiochannelFeatureWidget->getLinkStatus();
 				switch (retSetAudioControlDetail->getChannelDirection()) {
@@ -91,19 +91,37 @@ void AudioControlDetailFeatureWidget::createLayout() {
 
 void AudioControlDetailFeatureWidget::linkStatusChanged(unsigned int detailId,
 														bool status) {
+	applyLinkStatus(detailId, status, true);
+}
+
+// writeChanges=false only updates the display (state read from the device),
+// writeChanges=true is a user change that has to be sent to the device.
+void AudioControlDetailFeatureWidget::applyLinkStatus(unsigned int detailId,
+													  bool status,
+													  bool writeChanges) {
 	AudioChannelFeatureWidget *master = nullptr;
 	AudioChannelFeatureWidget *slave = nullptr;
 	if (detailId < 1)
 		return;
 	unsigned long index = static_cast<unsigned long>(detailId - 1);
 	if (index % 2) {
+		if (index >= m_vFeatureWidgets.size())
+			return;
 		master = this->m_vFeatureWidgets[index - 1];
 		slave = this->m_vFeatureWidgets[index];
-		master->changeLinkStatus(detailId - 1, status);
+		if (writeChanges)
+			master->changeLinkStatus(detailId - 1, status);
+		else
+			master->showLinkStatus(status);
 	} else {
+		if (index + 1 >= m_vFeatureWidgets.size())
+			return;
 		master = this->m_vFeatureWidgets[index];
 		slave = this->m_vFeatureWidgets[index + 1];
-		slave->changeLinkStatus(detailId + 1, status);
+		if (writeChanges)
+			slave->changeLinkStatus(detailId + 1, status);
+		else
+			slave->showLinkStatus(status);
 	}
 	master->setMaster(status, slave->getChannelName());
 	slave->setVisible(!status);

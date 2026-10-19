@@ -1,7 +1,9 @@
 #include "audiochannelfeaturewidget.h"
 #include "../sysex/communicationexception.h"
 #include "../sysex/protocolexception.h"
+#include "guisysexguard.h"
 #include "ui_audiochannelfeaturewidget.h"
+#include <QSignalBlocker>
 #include <vector>
 
 AudioChannelFeatureWidget::AudioChannelFeatureWidget(
@@ -55,13 +57,14 @@ void AudioChannelFeatureWidget::setRetSetAudioControlDetail(
 	if (retSetAudioControlDetail->hasMuteControl()) {
 		this->ui->m_pTbMute->setVisible(true);
 		this->ui->m_pTbMute->setEnabled(
-			retSetAudioControlDetail->getMuteControlEditable());
+			isWritable() && retSetAudioControlDetail->getMuteControlEditable());
 	} else {
 		this->ui->m_pTbMute->setVisible(false);
 	}
 	if (retSetAudioControlDetail->hasStereoLinkControl()) {
 		this->ui->m_pChbStereoLink->setVisible(true);
 		this->ui->m_pChbStereoLink->setEnabled(
+			isWritable() &&
 			retSetAudioControlDetail->getStereoLinkControlEditable());
 	} else {
 		this->ui->m_pChbStereoLink->setVisible(false);
@@ -69,6 +72,7 @@ void AudioChannelFeatureWidget::setRetSetAudioControlDetail(
 	if (retSetAudioControlDetail->hasPhantomPowerControl()) {
 		this->ui->m_pTbPhantomPower->setVisible(true);
 		this->ui->m_pTbPhantomPower->setEnabled(
+			isWritable() &&
 			retSetAudioControlDetail->getPhantomPowerControlEditable());
 	} else {
 		this->ui->m_pTbPhantomPower->setVisible(false);
@@ -76,6 +80,7 @@ void AudioChannelFeatureWidget::setRetSetAudioControlDetail(
 	if (retSetAudioControlDetail->hasHighImpendanceControl()) {
 		this->ui->m_pTbHighImpedance->setVisible(true);
 		this->ui->m_pTbHighImpedance->setEnabled(
+			isWritable() &&
 			retSetAudioControlDetail->getHighImpendanceControlEditable());
 	} else {
 		this->ui->m_pTbHighImpedance->setVisible(false);
@@ -88,6 +93,11 @@ void AudioChannelFeatureWidget::setRetSetAudioControlDetail(
 		this->ui->m_pSlideVolume->setFontSize(7);
 		this->ui->m_pFrmVolume->setEnabled(
 			retSetAudioControlDetail->getVolumeControlEditable());
+		// display only under the write guard; the meters stay visible
+		if (!isWritable()) {
+			this->ui->m_pSlideVolume->setEnabled(false);
+			this->ui->m_pDial->setEnabled(false);
+		}
 		this->ui->m_pSlideVolume->setDebug(false);
 		m_pSc1 =
 			std::make_shared<IConnCalc>(0, 256, iMinVolume, iMaxVolume, 256);
@@ -121,6 +131,13 @@ void AudioChannelFeatureWidget::setRetSetAudioControlDetail(
 	}
 }
 
+bool AudioChannelFeatureWidget::isWritable() const {
+	// fail safe: no device information means no writes
+	Device *device = m_pAudioControlDetail ? m_pAudioControlDetail->getDevice()
+										   : nullptr;
+	return device && !device->isWriteGuardEnabled();
+}
+
 void AudioChannelFeatureWidget::queryValues() {
 	std::unique_ptr<GetAudioControlDetailValue> getAudioControlDetailValue =
 		std::make_unique<GetAudioControlDetailValue>(
@@ -130,27 +147,32 @@ void AudioChannelFeatureWidget::queryValues() {
 		m_pAudioControlDetail->getControllerNumber());
 	getAudioControlDetailValue->setDetailNumber(
 		m_pAudioControlDetail->getDetailNumber());
-	try {
+	m_pRetSetAudioControlDetailValue.reset();
+	GuiSysex::run("Reading audio control values", [&]() {
 		m_pRetSetAudioControlDetailValue =
 			std::dynamic_pointer_cast<RetSetAudioControlDetailValue>(
 				getAudioControlDetailValue->querySmart());
-	} catch (ProtocolException protocolException) {
-		std::cerr << protocolException.getErrorMessage() << std::endl;
-	} catch (std::out_of_range oor) {
-		std::cerr << oor.what() << std::endl;
-	}
+	});
 }
 
 void AudioChannelFeatureWidget::setValues(
 	std::shared_ptr<RetSetAudioControlDetailValue>
 		retSetAudioControlDetailValue) {
+	// showing the device state must never look like a user edit
+	const QSignalBlocker volumeBlocker(ui->m_pSlideVolume);
+	const QSignalBlocker trimBlocker(ui->m_pDial);
+	const QSignalBlocker muteBlocker(ui->m_pTbMute);
+	const QSignalBlocker phantomBlocker(ui->m_pTbPhantomPower);
+	const QSignalBlocker highZBlocker(ui->m_pTbHighImpedance);
+	const QSignalBlocker linkBlocker(ui->m_pChbStereoLink);
+	const bool writable = isWritable();
 	if (m_pAudioControlDetail->hasVolumeControl() &&
 		retSetAudioControlDetailValue->hasVolumeControl()) {
 		ui->m_pSlideVolume->setValue(
 			retSetAudioControlDetailValue->getVolume());
 		ui->m_pDial->setValue(retSetAudioControlDetailValue->getTrim());
 		retSetAudioControlDetailValue->setHasVolumeControl(false);
-		if (m_pAudioControlDetail->getVolumeControlEditable()) {
+		if (writable && m_pAudioControlDetail->getVolumeControlEditable()) {
 			connect(this->ui->m_pSlideVolume, &PKSlider::valueChanged,
 					[=](int value) {
 						this->m_pRetSetAudioControlDetailValue->setVolume(
@@ -169,7 +191,7 @@ void AudioChannelFeatureWidget::setValues(
 		retSetAudioControlDetailValue->hasMuteControl()) {
 		ui->m_pTbMute->setChecked(retSetAudioControlDetailValue->getMute());
 		retSetAudioControlDetailValue->setHasMuteControl(false);
-		if (m_pAudioControlDetail->getMuteControlEditable()) {
+		if (writable && m_pAudioControlDetail->getMuteControlEditable()) {
 			connect(this->ui->m_pTbMute, &QToolButton::toggled,
 					[=](bool state) {
 						this->m_pRetSetAudioControlDetailValue->setMute(state);
@@ -182,7 +204,7 @@ void AudioChannelFeatureWidget::setValues(
 		ui->m_pTbPhantomPower->setChecked(
 			retSetAudioControlDetailValue->getPhantomPower());
 		retSetAudioControlDetailValue->setHasPhantomPowerControl(false);
-		if (m_pAudioControlDetail->getPhantomPowerControlEditable()) {
+		if (writable && m_pAudioControlDetail->getPhantomPowerControlEditable()) {
 			connect(ui->m_pTbPhantomPower, &QToolButton::clicked,
 					[=](bool state) {
 						this->m_pRetSetAudioControlDetailValue->setPhantomPower(
@@ -196,7 +218,7 @@ void AudioChannelFeatureWidget::setValues(
 		ui->m_pTbHighImpedance->setChecked(
 			retSetAudioControlDetailValue->getHigImpedance());
 		retSetAudioControlDetailValue->setHasHighImpendanceControl(false);
-		if (m_pAudioControlDetail->getHighImpendanceControlEditable()) {
+		if (writable && m_pAudioControlDetail->getHighImpendanceControlEditable()) {
 			connect(ui->m_pTbHighImpedance, &QToolButton::clicked,
 					[=](bool state) {
 						this->m_pRetSetAudioControlDetailValue->setHigImpedance(
@@ -210,7 +232,7 @@ void AudioChannelFeatureWidget::setValues(
 		ui->m_pChbStereoLink->setChecked(
 			retSetAudioControlDetailValue->getSteroLink());
 		retSetAudioControlDetailValue->setHasStereoLinkControl(false);
-		if (m_pAudioControlDetail->getStereoLinkControlEditable()) {
+		if (writable && m_pAudioControlDetail->getStereoLinkControlEditable()) {
 			connect(ui->m_pChbStereoLink, &QToolButton::clicked,
 					[=](bool clicked) {
 						this->m_pRetSetAudioControlDetailValue->setSteroLink(
@@ -223,6 +245,8 @@ void AudioChannelFeatureWidget::setValues(
 }
 
 void AudioChannelFeatureWidget::createConnections() {
+	if (!m_pUpdateTimer)
+		return;
 	connect(m_pUpdateTimer, &QTimer::timeout, this,
 			&AudioChannelFeatureWidget::audioChannelValueChanged);
 }
@@ -264,17 +288,24 @@ void AudioChannelFeatureWidget::initControls() {
 }
 
 void AudioChannelFeatureWidget::audioChannelValueChanged() {
-	try {
+	if (!m_pRetSetAudioControlDetailValue)
+		return;
+	GuiSysex::run("Updating audio control values", [&]() {
 		m_pRetSetAudioControlDetailValue->execute();
-	} catch (CommunicationException e) {
-		std::cerr << e.getErrorMessage() << std::endl;
-	}
+	});
 	m_pRetSetAudioControlDetailValue->reset();
+}
+
+void AudioChannelFeatureWidget::showLinkStatus(bool enabled) {
+	const QSignalBlocker blocker(ui->m_pChbStereoLink);
+	this->ui->m_pChbStereoLink->setChecked(enabled);
 }
 
 void AudioChannelFeatureWidget::changeLinkStatus(
 	__attribute__((unused)) unsigned int detailId, bool enabled) {
 	this->ui->m_pChbStereoLink->setChecked(enabled);
+	if (!m_pRetSetAudioControlDetailValue || !m_pUpdateTimer)
+		return;
 	this->m_pRetSetAudioControlDetailValue->setSteroLink(enabled);
 	this->m_pUpdateTimer->start(10);
 }

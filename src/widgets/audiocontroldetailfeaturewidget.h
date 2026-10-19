@@ -23,6 +23,8 @@ class AudioControlDetailFeatureWidget : public QWidget {
 
   private:
 	void createLayout();
+	void applyLinkStatus(unsigned int detailId, bool status,
+						 bool writeChanges);
 
 	std::shared_ptr<RetSetAudioControlParm> m_pRetSetAudioControlParm = nullptr;
 	AudioControlParmFeaturesWidget *m_pAudioControlParmFeaturesWidget = nullptr;
@@ -34,6 +36,7 @@ class AudioControlDetailFeatureWidget : public QWidget {
 
   signals:
 	void meterValueChanged(int channel, int value);
+
   private slots:
 
   public slots:

@@ -1,6 +1,7 @@
 #include "globalaudioconfigurationwidget.h"
 #include "../iconnconfigmain.h"
 #include "centralwidget.h"
+#include "guisysexguard.h"
 #include "ui_globalaudioconfiguration.h"
 
 #include <QMessageBox>
@@ -85,6 +86,14 @@ void GlobalAudioConfigurationWidget::loadData() {
 }
 
 void GlobalAudioConfigurationWidget::createConnections() {
+	Device *device = m_pRetSetAudioGlobalParam->getDevice();
+	if (!device || device->isWriteGuardEnabled()) {
+		// display only: no write handlers
+		ui->m_pCbCurrentAudioFramesBuffered->setEnabled(false);
+		ui->m_pCbCurrentSyncFactor->setEnabled(false);
+		ui->m_pTblAudioConfigurations->setEnabled(false);
+		return;
+	}
 	connect(ui->m_pCbCurrentAudioFramesBuffered,
 			QOverload<const QString &>::of(&QComboBox::currentIndexChanged),
 			this, [=](const QString &text) {
@@ -147,7 +156,10 @@ void GlobalAudioConfigurationWidget::valueEdited(QWidget *widget,
 }
 
 void GlobalAudioConfigurationWidget::save() {
-	if (m_pRetSetAudioGlobalParam->execute() == 0)
-		emit changeAudioConfiguration(
-			m_pRetSetAudioGlobalParam->getNumberOfActiveAudioConfiguration());
+	GuiSysex::run("Updating global audio configuration", [&]() {
+		if (m_pRetSetAudioGlobalParam->execute() == 0)
+			emit changeAudioConfiguration(
+				m_pRetSetAudioGlobalParam
+					->getNumberOfActiveAudioConfiguration());
+	});
 }

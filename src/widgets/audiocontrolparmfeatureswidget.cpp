@@ -1,6 +1,7 @@
 #include "audiocontrolparmfeatureswidget.h"
 #include "../sysex/retaudioportmetervalue.h"
 #include "audiocontroldetailfeaturewidget.h"
+#include "guisysexguard.h"
 
 #include <QLabel>
 #include <QScrollArea>
@@ -61,9 +62,14 @@ void AudioControlParmFeaturesWidget::createFeatureWidget(
 }
 
 void AudioControlParmFeaturesWidget::timerElapsed() {
-	std::shared_ptr<RetAudioPortMeterValue> rapmv =
-	    std::dynamic_pointer_cast<RetAudioPortMeterValue>(
-	        m_pGetAudioPortMeterValue->querySmart());
+	std::shared_ptr<RetAudioPortMeterValue> rapmv;
+	if (!GuiSysex::run("Reading audio meters", [&]() {
+			rapmv = std::dynamic_pointer_cast<RetAudioPortMeterValue>(
+			    m_pGetAudioPortMeterValue->querySmart());
+		})) {
+		m_pVolumeTimer->stop(); // do not repeat the failing query every 20 ms
+		return;
+	}
 	if (rapmv) {
 		ChannelVolumes v = rapmv->getVolumes();
 		for (auto channelVolume = v.in.begin(); channelVolume != v.in.end();
