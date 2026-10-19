@@ -59,6 +59,8 @@ Device::Device(unsigned int inPortNumber, unsigned int outPortNumber,
 	this->m_pSerialNumber =
 		new MIDISysexValue(static_cast<long>(serialNumber), 5);
 	this->m_pProductId = new MIDISysexValue(productId, 2);
+	// the write guard must be active before the first SysEx command is sent
+	refreshSupportProfile();
 	this->debug = false;
 	this->m_pInformationTree = new DeviceStructure;
 	try {
@@ -737,12 +739,21 @@ bool Device::loadConfigurationFromDevice() {
 }
 
 void Device::refreshSupportProfile() {
+	const bool isAudio4cProduct =
+		m_pProductId != nullptr &&
+		static_cast<unsigned int>(m_pProductId->getLongValue()) ==
+			AUDIO4C_PRODUCT_ID;
 	const bool looksLikeAudio4c =
-		hasAudio4cTag(m_sDetectedInputPortName) ||
+		isAudio4cProduct || hasAudio4cTag(m_sDetectedInputPortName) ||
 		hasAudio4cTag(m_sDetectedOutputPortName) || hasAudio4cTag(m_sModelName) ||
 		hasAudio4cTag(m_sDeviceName) || hasAudio4cTag(m_sModelNumber);
-	m_bExperimentalAudio4c = looksLikeAudio4c;
-	m_bReadOnlyMode = looksLikeAudio4c;
+	// sticky: either signal switches the guard on, nothing switches it off
+	if (looksLikeAudio4c) {
+		if (!m_bWriteGuard)
+			m_bHideConfigPanels = true;
+		m_bExperimentalAudio4c = true;
+		m_bWriteGuard = true;
+	}
 }
 
 BYTE_VECTOR *Device::manufacturerHeader = nullptr;

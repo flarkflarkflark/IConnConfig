@@ -85,6 +85,7 @@ class MioMain : public QMainWindow {
 	QAction *m_pActionDumpDiagnostics = nullptr;
 	bool m_bWarnedExperimentalMode = false;
 	bool m_bDumpDiagnosticsOnStartup = false;
+	bool m_bShowReadonlyPanels = false;
 	bool m_bDumpAudio4cClockOnStartup = false;
 	bool m_bCompareAudio4cClockOnStartup = false;
 	bool m_bCompareAudio4cGlobalOnStartup = false;

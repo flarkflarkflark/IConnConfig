@@ -132,7 +132,14 @@ class Device {
 	std::string getDetectedInputPortName() { return m_sDetectedInputPortName; }
 	std::string getDetectedOutputPortName() { return m_sDetectedOutputPortName; }
 	bool isExperimentalAudio4c() const { return m_bExperimentalAudio4c; }
-	bool isReadOnlyMode() const { return m_bReadOnlyMode; }
+	/** Hard guard: when set, SysExMessage::execute() refuses every mutating
+	 * command. Cannot be switched off for the lifetime of the device. */
+	bool isWriteGuardEnabled() const { return m_bWriteGuard; }
+	/** Alias kept for the diagnostics output (read_only_mode=...). */
+	bool isReadOnlyMode() const { return isWriteGuardEnabled(); }
+	/** Hide the MIDI/audio configuration panels (GUI only, no safety role). */
+	bool shouldHideConfigPanels() const { return m_bHideConfigPanels; }
+	void setHideConfigPanels(bool hide) { m_bHideConfigPanels = hide; }
 
 	MIDISysexValue *getSerialNumber() { return m_pSerialNumber; }
 	MIDISysexValue *getProductId() { return m_pProductId; }
@@ -232,7 +239,8 @@ class Device {
 	std::string m_sDetectedInputPortName;
 	std::string m_sDetectedOutputPortName;
 	bool m_bExperimentalAudio4c = false;
-	bool m_bReadOnlyMode = false;
+	bool m_bWriteGuard = false;
+	bool m_bHideConfigPanels = false;
 
 	// MIDI structures
 	std::shared_ptr<RetSetMidiInfo> m_pMidiInfo;

@@ -23,7 +23,7 @@ DeviceInfoWidget::DeviceInfoWidget(MioMain *parent, Device *device,
 		m_pInfoSections->push_back(
 			new MultiInfoListEntry(MultiInfoListEntry::GLOBAL_DEVICE_INFO,
 								   tr("Global").toStdString()));
-	if (!device->isReadOnlyMode() &&
+	if (!device->shouldHideConfigPanels() &&
 		device->getCommands()->isCommandSupported(
 			Command::GET_ETHERNET_PORT_INFO)) {
 		int networkAdapters = device->getMidiInfo()->getEthernetJacks();
@@ -33,7 +33,7 @@ DeviceInfoWidget::DeviceInfoWidget(MioMain *parent, Device *device,
 									   tr("Network").toStdString(), i));
 		}
 	}
-	if (!device->isReadOnlyMode() && device->hasAudioSupport()) {
+	if (!device->shouldHideConfigPanels() && device->hasAudioSupport()) {
 		m_pInfoSections->push_back(new MultiInfoListEntry(
 			MultiInfoListEntry::SECTION, tr("Audio").toStdString()));
 		m_pInfoSections->push_back(new MultiInfoListEntry(
@@ -66,7 +66,7 @@ QWidget *DeviceInfoWidget::createWidget(MultiInfoListEntry *entry) {
 	case MultiInfoListEntry::GLOBAL_DEVICE_INFO: {
 		InfoTableWidget *w = new InfoTableWidget(
 			this->parentWidget(), this->m_pDeviceInfo->getRetSetInfos(),
-			m_pDevice->isReadOnlyMode());
+			m_pDevice->isWriteGuardEnabled());
 		connect(
 			w,
 			SIGNAL(

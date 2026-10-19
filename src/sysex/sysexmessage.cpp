@@ -252,7 +252,7 @@ int SysExMessage::execute() {
 	if (m_pDevice == nullptr)
 		return -1;
 	BYTE_VECTOR *message = getMIDISysExMessage();
-	if (m_pDevice->isReadOnlyMode() && isMutatingCommand(m_Command)) {
+	if (m_pDevice->isWriteGuardEnabled() && isMutatingCommand(m_Command)) {
 		std::ostringstream oss;
 		oss << "[SysEx BLOCKED] cmd=0x" << std::hex << std::setw(2)
 			<< std::setfill('0') << static_cast<int>(m_Command) << std::dec

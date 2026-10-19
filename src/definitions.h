@@ -4,6 +4,10 @@
 #include <cmath>
 #include <vector>
 
+/* Product ID (SysEx GET_DEVICE answer, USB 2321:0022) of the iConnectivity
+ * AUDIO4c. */
+constexpr unsigned int AUDIO4C_PRODUCT_ID = 0x0C;
+
 /* Macros */
 
 #define channelIndex(port, portclass, channel)                                 \

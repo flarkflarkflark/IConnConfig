@@ -792,6 +792,7 @@ MioMain::MioMain(QCommandLineParser *parser, QWidget *parent)
 	m_pUi->setupUi(this);
 	pMainWindow = this;
 	m_bDumpAudio4cClockOnStartup = parser->isSet("dump-audio4c-clock");
+	m_bShowReadonlyPanels = parser->isSet("show-readonly-panels");
 	m_bCompareAudio4cClockOnStartup =
 		parser->isSet("compare-audio4c-clock");
 	m_bCompareAudio4cGlobalOnStartup =
@@ -937,7 +938,7 @@ void MioMain::replacePanel(QWidget *w) {
 }
 
 void MioMain::addDeviceToolButtons() {
-	if (m_pCurrentDevice && m_pCurrentDevice->isReadOnlyMode())
+	if (m_pCurrentDevice && m_pCurrentDevice->isWriteGuardEnabled())
 		return;
 	BYTE_VECTOR *saveRestoreList = this->m_pCurrentDevice->m_pSaveRestoreList;
 	if (nullptr == saveRestoreList)
@@ -988,6 +989,9 @@ void MioMain::openDeviceGUI(Device *d) {
 	this->m_pCurrentDevice = d;
 	m_pActionDumpDiagnostics->setEnabled(true);
 	d->connect();
+	// only the panel visibility can be changed here, never the write guard
+	if (m_bShowReadonlyPanels)
+		d->setHideConfigPanels(false);
 	std::shared_ptr<RetCommandList> c = d->getCommands();
 	if (c == nullptr) {
 		// TODO throw error
@@ -1003,11 +1007,11 @@ void MioMain::openDeviceGUI(Device *d) {
 		new DeviceInfoWidget(this, d, d->getDeviceInfo());
 	this->addDock(deviceInfoWidget, Qt::LeftDockWidgetArea);
 
-	if (!d->isReadOnlyMode() && d->hasMidiSupport()) {
+	if (!d->shouldHideConfigPanels() && d->hasMidiSupport()) {
 		PortsWidget *portsWidget = new PortsWidget(this, d);
 		this->addDock(portsWidget, Qt::LeftDockWidgetArea);
 	}
-	if (!d->isReadOnlyMode() && d->hasAudioSupport()) {
+	if (!d->shouldHideConfigPanels() && d->hasAudioSupport()) {
 		AudioPortsWidget *audioPortsWidget = new AudioPortsWidget(this, d);
 		this->addDock(audioPortsWidget, Qt::LeftDockWidgetArea);
 		if (d->getCommands()->isCommandSupported(GET_AUDIO_PATCHBAY_PARM) ||
@@ -1062,7 +1066,7 @@ void MioMain::openDeviceGUI(Device *d) {
 }
 
 void MioMain::storeToDevice() {
-	if (m_pCurrentDevice && m_pCurrentDevice->isReadOnlyMode()) {
+	if (m_pCurrentDevice && m_pCurrentDevice->isWriteGuardEnabled()) {
 		QMessageBox::warning(this, tr("Read-only Mode"),
 							 tr("Device writes are disabled in experimental "
 								"read-only mode."));
@@ -1104,7 +1108,7 @@ void MioMain::readConfigurationFromFile() {}
 void MioMain::writeConfigurtionToFile() {}
 
 void MioMain::restoreFromDevice() {
-	if (m_pCurrentDevice && m_pCurrentDevice->isReadOnlyMode()) {
+	if (m_pCurrentDevice && m_pCurrentDevice->isWriteGuardEnabled()) {
 		QMessageBox::warning(this, tr("Read-only Mode"),
 							 tr("Device writes are disabled in experimental "
 								"read-only mode."));
@@ -1122,7 +1126,7 @@ void MioMain::restoreFromDevice() {
 }
 
 void MioMain::resetToFactoryDefaults() {
-	if (m_pCurrentDevice && m_pCurrentDevice->isReadOnlyMode()) {
+	if (m_pCurrentDevice && m_pCurrentDevice->isWriteGuardEnabled()) {
 		QMessageBox::warning(this, tr("Read-only Mode"),
 							 tr("Device writes are disabled in experimental "
 								"read-only mode."));
@@ -1140,7 +1144,7 @@ void MioMain::resetToFactoryDefaults() {
 }
 
 void MioMain::saveRestore(SaveRestore::SaveResstoreId saveRestoreId) {
-	if (m_pCurrentDevice && m_pCurrentDevice->isReadOnlyMode()) {
+	if (m_pCurrentDevice && m_pCurrentDevice->isWriteGuardEnabled()) {
 		std::cerr << "Save/restore blocked in read-only experimental mode"
 				  << std::endl;
 		return;
@@ -1151,13 +1155,13 @@ void MioMain::saveRestore(SaveRestore::SaveResstoreId saveRestoreId) {
 }
 
 void MioMain::showExperimentalWarningIfNeeded() {
-	if (!m_pCurrentDevice || !m_pCurrentDevice->isReadOnlyMode() ||
+	if (!m_pCurrentDevice || !m_pCurrentDevice->isWriteGuardEnabled() ||
 		m_bWarnedExperimentalMode) {
 		return;
 	}
 	m_bWarnedExperimentalMode = true;
 	const QString warningText =
-		tr("AUDIO4c support is experimental; read-only mode enabled.");
+		tr("AUDIO4c support is experimental; writes to the device are blocked.");
 	const QStringList args = QCoreApplication::arguments();
 	if (args.contains("--dump-device-diagnostics") ||
 		args.contains("--dump-audio4c-clock")) {

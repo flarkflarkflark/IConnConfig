@@ -69,6 +69,13 @@ int main(int argc, char *argv[]) {
 			"Compare global-audio payloads across diagnostics files. Usage: "
 			"--compare-audio4c-global FILE1 FILE2 [FILE3...]"));
 	parser->addOption(compareAudio4cGlobalOption);
+	QCommandLineOption showReadonlyPanelsOption(
+		QStringList() << "show-readonly-panels",
+		QCoreApplication::translate(
+			"main",
+			"Show the MIDI/audio configuration panels of write-protected "
+			"devices (AUDIO4c). Writes stay blocked."));
+	parser->addOption(showReadonlyPanelsOption);
 	parser->addPositionalArgument(
 		"files",
 		QCoreApplication::translate(
