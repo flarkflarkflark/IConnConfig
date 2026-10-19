@@ -1,0 +1,165 @@
+		QDockWidget {
+			font-size: 11pt;
+			font-weight: bold;
+			min-width: 250px;
+		}
+		
+		QDockWidget::title {
+			padding: 8px;
+			font-weight: bold;
+			font-size: 11pt;
+			text-align: center;
+		}
+		
+		/* Fix vertical text - make it horizontal */
+		QListWidget {
+			font-size: 12pt;
+			font-weight: bold;
+		}
+		
+		QListWidget::item {
+			padding: 12px;
+			margin: 2px;
+			border-radius: 6px;
+			font-size: 12pt;
+			font-weight: bold;
+			text-align: left;
+			min-height: 30px;
+		}
+		
+		QListWidget::item:selected {
+			background: palette(highlight);
+			color: palette(highlighted-text);
+		}
+		
+		QListWidget::item:hover {
+			background: palette(midlight);
+		}
+		
+		/* Make dropdowns bigger and more readable */
+		QComboBox {
+			padding: 8px 12px;
+			font-size: 11pt;
+			font-weight: bold;
+			min-height: 25px;
+			border-radius: 4px;
+		}
+		
+		QComboBox::drop-down {
+			width: 25px;
+			border-radius: 4px;
+		}
+		
+		QComboBox::down-arrow {
+			width: 12px;
+			height: 12px;
+		}
+		
+		QComboBox QAbstractItemView {
+			font-size: 11pt;
+			font-weight: bold;
+			padding: 4px;
+		}
+		
+		QTabBar::tab {
+			padding: 12px 20px;
+			margin: 2px;
+			font-size: 12pt;
+			font-weight: bold;
+			min-width: 120px;
+			border-radius: 6px;
+		}
+		
+		QTabBar::tab:selected {
+			background: palette(highlight);
+			color: palette(highlighted-text);
+		}
+		
+		QPushButton {
+			padding: 10px 16px;
+			font-size: 11pt;
+			font-weight: bold;
+			min-height: 25px;
+			border-radius: 6px;
+		}
+		
+		QGroupBox {
+			font-weight: bold;
+			font-size: 13pt;
+			margin: 15px 0px;
+			padding-top: 20px;
+		}
+		
+		QGroupBox::title {
+			subcontrol-origin: margin;
+			left: 15px;
+			padding: 0 8px 0 8px;
+			font-size: 13pt;
+			font-weight: bold;
+		}
+		
+		QLineEdit, QSpinBox, QDoubleSpinBox {
+			padding: 8px;
+			font-size: 11pt;
+			min-height: 25px;
+			border-radius: 4px;
+		}
+		
+		QLabel {
+			font-size: 11pt;
+			font-weight: normal;
+		}
+		
+		QCheckBox, QRadioButton {
+			font-size: 11pt;
+			font-weight: bold;
+			padding: 4px;
+		}
+		
+		QTableWidget, QTreeWidget {
+			font-size: 11pt;
+		}
+		
+		QTableWidget::item, QTreeWidget::item {
+			padding: 8px;
+			font-size: 11pt;
+		}
+		
+		QHeaderView::section {
+			padding: 10px;
+			font-weight: bold;
+			font-size: 11pt;
+		}
+		
+		QToolButton {
+			padding: 8px 12px;
+			font-size: 11pt;
+			font-weight: bold;
+			min-width: 80px;
+			min-height: 30px;
+			border-radius: 6px;
+		}
+		
+		QMenuBar {
+			font-size: 12pt;
+			font-weight: bold;
+		}
+		
+		QMenuBar::item {
+			padding: 8px 16px;
+			font-size: 12pt;
+			font-weight: bold;
+		}
+		
+		QMenu {
+			font-size: 11pt;
+		}
+		
+		QMenu::item {
+			padding: 8px 20px;
+			font-size: 11pt;
+		}
+		
+		QStatusBar {
+			font-size: 11pt;
+		}

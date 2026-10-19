@@ -1,0 +1,25 @@
+FROM archlinux:latest
+
+# Install base packages
+RUN pacman -Syu --noconfirm && \
+    pacman -S --noconfirm base-devel git wget unzip python python-mako ruby gperf intltool lzip p7zip gdk-pixbuf2
+
+# Install MXE (cross-compilation environment)
+RUN git clone https://github.com/mxe/mxe.git /opt/mxe && \
+    cd /opt/mxe && \
+    make MXE_TARGETS='x86_64-w64-mingw32.static' qtbase qttools
+
+# Set environment
+ENV PATH="/opt/mxe/usr/bin:$PATH"
+
+WORKDIR /build
+COPY . .
+
+# Build script
+RUN if [ ! -d ../PKControls ]; then \
+        git clone https://codeberg.org/dehnhardt/PKControls.git ../PKControls; \
+    fi && \
+    x86_64-w64-mingw32.static-qmake-qt5 iConnConfig.pro && \
+    make -j$(nproc)
+
+CMD ["cp", "iconnconfig.exe", "/output/"]

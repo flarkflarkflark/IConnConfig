@@ -8,6 +8,7 @@ AudioWidget::AudioWidget(MioMain *parent, Device *device, QString windowTitle)
 	m_pInfoSections = new std::vector<MultiInfoListEntry *>();
 	MultiInfoListEntry *entry = new MultiInfoListEntry(
 		MultiInfoListEntry::AUDIO_MIXER, tr("Audio Mixer").toStdString());
+	entry->enabled = true;
 	m_pInfoSections->push_back(entry);
 	entry = new MultiInfoListEntry(MultiInfoListEntry::AUDIO_ROUTING,
 								   tr("Audio Routing").toStdString());

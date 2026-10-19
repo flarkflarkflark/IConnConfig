@@ -142,6 +142,9 @@ void AudioMixerWidget::mixerConfigurationChanged(
 								pk::ChannelDirection::CD_INPUT);
 						amcw->setMixerInputControl(retMixerInputControl);
 						amcw->setConnectedOutputChannel(audioOutputChannelId);
+						// Make mixer resizable
+						amcw->setMinimumSize(120, 300);
+						amcw->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 						connect(
 							mpw, &MixerPortWidget::inMeterValueChanged, amcw,
 							&AudioMixerInputChannelWidget::changeMeterVolume);
@@ -156,6 +159,9 @@ void AudioMixerWidget::mixerConfigurationChanged(
 							m_pDevice, portId, audioOutputChannelId,
 							pk::ChannelDirection::CD_OUTPUT);
 					amcw->setMixerOutputControl(retMixerOutputControl);
+					// Make mixer resizable
+					amcw->setMinimumSize(120, 300);
+					amcw->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 					connect(mpw, &MixerPortWidget::outMeterValueChanged, amcw,
 							&AudioMixerOutputChannelWidget::changeMeterVolume);
 					mpw->addMixerPanel(amcw, pk::ChannelDirection::CD_OUTPUT,

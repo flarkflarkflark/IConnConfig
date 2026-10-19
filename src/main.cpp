@@ -12,7 +12,10 @@ int main(int argc, char *argv[]) {
 	QCoreApplication::setOrganizationName("punkt-k");
 	QCoreApplication::setOrganizationDomain("www.punkt-k.de");
 	QCoreApplication::setApplicationName("iConnConfig");
-	QCoreApplication::setApplicationVersion("0.4");
+	QCoreApplication::setApplicationVersion("0.5-beta");
+
+	// Simple: just make everything bigger and readable
+	app.setStyleSheet("* { font-size: 12pt; }");
 
 	QTranslator mioConfigTranslator;
 	QTranslator qtTranslator;
@@ -30,20 +33,18 @@ int main(int argc, char *argv[]) {
 	}
 
 	QCommandLineParser *parser = new QCommandLineParser();
-	parser->setApplicationDescription("Mio Config");
+	parser->setApplicationDescription("iConnConfig - iConnectivity Device Configuration");
 	parser->addHelpOption();
 	parser->addVersionOption();
 
-	// A boolean option with multiple names (-f, --filename)
 	QCommandLineOption filenameOption(
-		QStringList() << "f"
-					  << "filename",
+		QStringList() << "f" << "filename",
 		QCoreApplication::translate("main", "filename to read settings from."),
 		"filename");
 	parser->addOption(filenameOption);
 
-	// Process the actual command line arguments given by the user
 	parser->process(app);
+
 	MioMain w(parser);
 	w.show();
 	return app.exec();
