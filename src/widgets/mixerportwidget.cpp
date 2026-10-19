@@ -1,5 +1,6 @@
 #include "mixerportwidget.h"
 #include "../sysex/retmixermetervalue.h"
+#include "guisysexguard.h"
 #include <QVBoxLayout>
 
 MixerPortWidget::MixerPortWidget(unsigned int portId, Device *device,
@@ -27,7 +28,9 @@ void MixerPortWidget::addMixerPanel(AudioMixerChannelWidget *mixerPanel,
 	}
 	m_pMixerPanelLayout->addWidget(mixerPanel);
 	connect(mixerPanel, &AudioMixerChannelWidget::linkStatusChanged, this,
-			&MixerPortWidget::linkStatusChanged);
+				&MixerPortWidget::linkStatusChanged);
+	connect(mixerPanel, &AudioMixerChannelWidget::linkStatusLoaded, this,
+				&MixerPortWidget::linkStatusLoaded);
 	connect(mixerPanel, &AudioMixerChannelWidget::channelConnectionChanged,
 			this, &MixerPortWidget::channelConnectionChanged);
 }
@@ -65,8 +68,11 @@ void MixerPortWidget::getVolumes() {
 		std::make_unique<GetMixerMeterValue>(m_pDevice);
 	mmv->setPortId(m_iPortId);
 	mmv->setPortDirections(pk::PortDirection::BOTH);
-	std::shared_ptr<RetMixerMeterValue> retMixerMeterValue =
-		std::dynamic_pointer_cast<RetMixerMeterValue>(mmv->querySmart());
+	std::shared_ptr<RetMixerMeterValue> retMixerMeterValue;
+	GuiSysex::run("Reading mixer meters", [&]() {
+		retMixerMeterValue =
+			std::dynamic_pointer_cast<RetMixerMeterValue>(mmv->querySmart());
+	});
 	mmv->setPortId(m_iPortId);
 }
 
@@ -75,9 +81,14 @@ void MixerPortWidget::timerElapsed() {
 		AudioChannelId outputChannelId = m_iOutputOffset + i;
 		m_pGetMixerMeterValue->setPortDirections(pk::PortDirection::BOTH);
 		m_pGetMixerMeterValue->setOutputNumber(outputChannelId);
-		std::shared_ptr<RetMixerMeterValue> rapmv =
-			std::dynamic_pointer_cast<RetMixerMeterValue>(
-				m_pGetMixerMeterValue->querySmart());
+		std::shared_ptr<RetMixerMeterValue> rapmv;
+		if (!GuiSysex::run("Reading mixer meters", [&]() {
+				rapmv = std::dynamic_pointer_cast<RetMixerMeterValue>(
+					m_pGetMixerMeterValue->querySmart());
+			})) {
+			m_pVolumeTimer->stop();
+			return;
+		}
 		if (rapmv) {
 			ChannelVolumes v = rapmv->getVolumes();
 			for (auto channelVolume = v.in.begin(); channelVolume != v.in.end();
@@ -123,6 +134,18 @@ void MixerPortWidget::hideEvent(QHideEvent *event) {
 void MixerPortWidget::linkStatusChanged(AudioChannelId mixerChannelId,
 										pk::ChannelDirection channelDirection,
 										bool status) {
+	applyLinkStatus(mixerChannelId, channelDirection, status, true);
+}
+
+void MixerPortWidget::linkStatusLoaded(AudioChannelId mixerChannelId,
+									   pk::ChannelDirection channelDirection,
+									   bool status) {
+	applyLinkStatus(mixerChannelId, channelDirection, status, false);
+}
+
+void MixerPortWidget::applyLinkStatus(AudioChannelId mixerChannelId,
+									  pk::ChannelDirection channelDirection,
+									  bool status, bool writeChanges) {
 	AudioMixerChannelWidget *master = nullptr;
 	AudioMixerChannelWidget *slave = nullptr;
 	if (mixerChannelId < 1)
@@ -136,7 +159,6 @@ void MixerPortWidget::linkStatusChanged(AudioChannelId mixerChannelId,
 			master = this->m_MapAttachedOutputChannels[mixerChannelId];
 			slave = this->m_MapAttachedOutputChannels[mixerChannelId + 1];
 		}
-		master->changeLinkStatus(status);
 	} else {
 		if (channelDirection == pk::ChannelDirection::CD_INPUT) {
 			master = this->m_MapAttachedInputChannels[mixerChannelId - 1];
@@ -146,7 +168,18 @@ void MixerPortWidget::linkStatusChanged(AudioChannelId mixerChannelId,
 			master = this->m_MapAttachedOutputChannels[mixerChannelId - 1];
 			slave = this->m_MapAttachedOutputChannels[mixerChannelId];
 		}
-		slave->changeLinkStatus(status);
+	}
+	if (!master || !slave)
+		return;
+	if (writeChanges) {
+		if (mixerChannelId % 2)
+			master->changeLinkStatus(status);
+		else
+			slave->changeLinkStatus(status);
+	}
+	if (!writeChanges) {
+		master->showLinkStatus(status);
+		slave->showLinkStatus(status);
 	}
 	master->setMaster(status, slave->getChannelName());
 	slave->setSlave(status);
@@ -188,8 +221,8 @@ void MixerPortWidget::linkStatusChanged(AudioChannelId mixerChannelId,
 			master->getSecondConnectionFrame()->setEnabled(true);
 		}
 		int balance = master->calculateBalance(master->getPanValue(),
-											   slave->getPanValue());
-		master->setPanValue(balance);
+										   slave->getPanValue());
+		master->setPanValue(balance, writeChanges);
 	} else {
 		QLayout *l = slave->getFirstConnectionFrame()->layout();
 		if (l) {
@@ -197,8 +230,8 @@ void MixerPortWidget::linkStatusChanged(AudioChannelId mixerChannelId,
 			master->getSecondConnectionFrame()->setEnabled(false);
 		}
 		int balance = master->getPanValue();
-		master->setPanValue(master->calculatePanL(balance));
-		slave->setPanValue(master->calculatePanR(balance));
+		master->setPanValue(master->calculatePanL(balance), writeChanges);
+		slave->setPanValue(master->calculatePanR(balance), writeChanges);
 	}
 }
 

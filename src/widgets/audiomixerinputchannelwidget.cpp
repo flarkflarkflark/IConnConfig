@@ -4,10 +4,12 @@
 #include "../sysex/getmixeroutputparm.h"
 #include "../sysex/protocolexception.h"
 #include "../sysex/retsetaudiochannelname.h"
+#include "guisysexguard.h"
 #include "portdisplayhelper.h"
 #include "ui_audiochannelfeaturewidget.h"
 
 #include <QMenu>
+#include <QSignalBlocker>
 #include <QVBoxLayout>
 #include <sstream>
 
@@ -48,6 +50,7 @@ void AudioMixerInputChannelWidget::setMixerInputControl(
 	std::shared_ptr<RetMixerInputControl> retMixerInputControl) {
 
 	this->m_pMixerInputControl = retMixerInputControl;
+	const bool writable = !m_pDevice->isWriteGuardEnabled();
 
 	ui->m_pSlidePan->setVisible(m_pMixerInputControl->hasPanControl());
 	ui->m_pSlideVolume->setVisible(m_pMixerInputControl->hasVolumeControl());
@@ -58,20 +61,26 @@ void AudioMixerInputChannelWidget::setMixerInputControl(
 	ui->m_pChbStereoLink->setVisible(
 		m_pMixerInputControl->hasStereoLinkControl());
 
-	ui->m_pSlidePan->setEnabled(m_pMixerInputControl->getPanControlEditable());
-	ui->m_pSlideVolume->setVisible(m_pMixerInputControl->hasVolumeControl());
-	ui->m_pTbMute->setEnabled(m_pMixerInputControl->getMuteControlEditable());
-	ui->m_pTbSolo->setEnabled(m_pMixerInputControl->getSoloControlEditable());
-	ui->m_pTbPfl->setEnabled(m_pMixerInputControl->getSoloPFLControlEditable());
+	ui->m_pSlidePan->setEnabled(
+		writable && m_pMixerInputControl->getPanControlEditable());
+	ui->m_pSlideVolume->setEnabled(
+		writable && m_pMixerInputControl->getVolumeControlEditable());
+	ui->m_pTbMute->setEnabled(
+		writable && m_pMixerInputControl->getMuteControlEditable());
+	ui->m_pTbSolo->setEnabled(
+		writable && m_pMixerInputControl->getSoloControlEditable());
+	ui->m_pTbPfl->setEnabled(
+		writable && m_pMixerInputControl->getSoloPFLControlEditable());
 	ui->m_pTbInvert->setEnabled(
-		m_pMixerInputControl->getInvertControlEditable());
+		writable && m_pMixerInputControl->getInvertControlEditable());
 	ui->m_pChbStereoLink->setEnabled(
-		m_pMixerInputControl->getStereoLinkControlEditable());
+		writable && m_pMixerInputControl->getStereoLinkControlEditable());
+	m_pBtnSelectConnection->setEnabled(writable);
 
 	if (m_pMixerInputControl->hasPanControl()) {
 		ui->m_pSlidePan->setMinimum(-127);
 		ui->m_pSlidePan->setMaximum(127);
-		if (m_pMixerInputControl->getPanControlEditable()) {
+		if (writable && m_pMixerInputControl->getPanControlEditable()) {
 			connect(this->ui->m_pSlidePan, &QSlider::valueChanged,
 					[=](int value) {
 						this->m_pRetSetMixerInputControlValue->setPan(value);
@@ -86,8 +95,7 @@ void AudioMixerInputChannelWidget::setMixerInputControl(
 			0, 256, m_pMixerInputControl->getMinimumVolumeValue(),
 			m_pMixerInputControl->getMaximumVolumeValue(), 256);
 		ui->m_pSlideVolume->setScaleCalc(this->m_pChannelCalc);
-		if (m_pMixerInputControl->getVolumeControlEditable()) {
-			ui->m_pSlidePan->setEnabled(m_pMixerInputControl->hasPanControl());
+		if (writable && m_pMixerInputControl->getVolumeControlEditable()) {
 			connect(this->ui->m_pSlideVolume, &PKSlider::valueChanged,
 					[=](int value) {
 						this->m_pRetSetMixerInputControlValue->setVolume(value);
@@ -116,7 +124,7 @@ void AudioMixerInputChannelWidget::setMixerInputControl(
 		this->ui->m_pPBRight->reset();
 	}
 	if (m_pMixerInputControl->hasMuteControl()) {
-		if (m_pMixerInputControl->getMuteControlEditable()) {
+		if (writable && m_pMixerInputControl->getMuteControlEditable()) {
 			connect(this->ui->m_pTbMute, &QToolButton::toggled,
 					[=](bool state) {
 						this->m_pRetSetMixerInputControlValue->setMute(state);
@@ -126,7 +134,7 @@ void AudioMixerInputChannelWidget::setMixerInputControl(
 		}
 	}
 	if (m_pMixerInputControl->hasSoloControl()) {
-		if (m_pMixerInputControl->getSoloControlEditable()) {
+		if (writable && m_pMixerInputControl->getSoloControlEditable()) {
 			connect(ui->m_pTbSolo, &QToolButton::clicked, [=](bool state) {
 				this->m_pRetSetMixerInputControlValue->setSolo(state);
 				this->m_pUpdateTimer->start();
@@ -135,7 +143,7 @@ void AudioMixerInputChannelWidget::setMixerInputControl(
 		}
 	}
 	if (m_pMixerInputControl->hasSoloPFLControl()) {
-		if (m_pMixerInputControl->getSoloPFLControlEditable()) {
+		if (writable && m_pMixerInputControl->getSoloPFLControlEditable()) {
 			connect(ui->m_pTbPfl, &QToolButton::clicked, [=](bool state) {
 				this->m_pRetSetMixerInputControlValue->setSoloPFL(state);
 				this->m_pUpdateTimer->start();
@@ -144,7 +152,7 @@ void AudioMixerInputChannelWidget::setMixerInputControl(
 		}
 	}
 	if (m_pMixerInputControl->hasInvertControl()) {
-		if (m_pMixerInputControl->getInvertControlEditable()) {
+		if (writable && m_pMixerInputControl->getInvertControlEditable()) {
 			connect(ui->m_pTbInvert, &QToolButton::clicked, [=](bool state) {
 				this->m_pRetSetMixerInputControlValue->setInvert(state);
 				this->m_pUpdateTimer->start();
@@ -153,7 +161,7 @@ void AudioMixerInputChannelWidget::setMixerInputControl(
 		}
 	}
 	if (m_pMixerInputControl->hasStereoLinkControl()) {
-		if (m_pMixerInputControl->getStereoLinkControlEditable()) {
+		if (writable && m_pMixerInputControl->getStereoLinkControlEditable()) {
 			connect(ui->m_pChbStereoLink, &QToolButton::clicked,
 					[=](bool clicked) {
 						this->m_pRetSetMixerInputControlValue->setSteroLink(
@@ -282,15 +290,17 @@ void AudioMixerInputChannelWidget::changeInput(
 	unsigned int audioSourceChannelNumber, std::string audioSourceChannelName,
 	pk::AudioPortType audioPortType) {
 
-	m_pMixerInputParm->setAudioSourcePortId(audioSourcePortId);
-	m_pMixerInputParm->setAudioSourceChannelNumber(audioSourceChannelNumber);
-	if (m_pMixerInputParm->execute() == 0) {
-		m_pDevice->getAudioMixerInputChannels(true);
-		setInputName(audioSourcePortId, audioSourcePortName,
-					 audioSourceChannelNumber, audioSourceChannelName,
-					 audioPortType);
-		emit channelConnectionChanged();
-	}
+	GuiSysex::run("Changing mixer input routing", [&]() {
+		m_pMixerInputParm->setAudioSourcePortId(audioSourcePortId);
+		m_pMixerInputParm->setAudioSourceChannelNumber(audioSourceChannelNumber);
+		if (m_pMixerInputParm->execute() == 0) {
+			m_pDevice->getAudioMixerInputChannels(true);
+			setInputName(audioSourcePortId, audioSourcePortName,
+						 audioSourceChannelNumber, audioSourceChannelName,
+						 audioPortType);
+			emit channelConnectionChanged();
+		}
+	});
 }
 
 void AudioMixerInputChannelWidget::queryInputValues() {
@@ -300,20 +310,25 @@ void AudioMixerInputChannelWidget::queryInputValues() {
 	getMixerInputControlValue->setMixerOutputNumber(m_iConnectedOutputChannel);
 	getMixerInputControlValue->setMixerInputNumber(m_iMixerChannelId);
 
-	try {
+	m_pRetSetMixerInputControlValue.reset();
+	GuiSysex::run("Reading mixer input values", [&]() {
 		m_pRetSetMixerInputControlValue =
 			std::dynamic_pointer_cast<RetSetMixerInputControlValue>(
 				getMixerInputControlValue->querySmart());
-	} catch (ProtocolException protocolException) {
-		std::cerr << protocolException.getErrorMessage() << std::endl;
-	} catch (std::out_of_range oor) {
-		std::cerr << oor.what() << std::endl;
-	}
+	});
 }
 
 void AudioMixerInputChannelWidget::setInputValues(
 	std::shared_ptr<RetSetMixerInputControlValue>
 		retSetMixerInputControlValue) {
+	const QSignalBlocker panBlocker(ui->m_pSlidePan);
+	const QSignalBlocker volumeBlocker(ui->m_pSlideVolume);
+	const QSignalBlocker muteBlocker(ui->m_pTbMute);
+	const QSignalBlocker soloBlocker(ui->m_pTbSolo);
+	const QSignalBlocker pflBlocker(ui->m_pTbPfl);
+	const QSignalBlocker invertBlocker(ui->m_pTbInvert);
+	const QSignalBlocker stereoLinkBlocker(ui->m_pChbStereoLink);
+
 	if (!m_bIsSlave ||
 		((retSetMixerInputControlValue->getMixerInputNumber() % 2) == 1)) {
 		std::cout << "read values " << m_iMixerChannelId << std::endl;
@@ -348,23 +363,30 @@ void AudioMixerInputChannelWidget::setInputValues(
 		retSetMixerInputControlValue->setHasInvertControl(false);
 	}
 	if (m_pMixerInputControl->hasStereoLinkControl()) {
-		ui->m_pChbStereoLink->setChecked(
-			retSetMixerInputControlValue->getSteroLink());
+		const bool linked = retSetMixerInputControlValue->getSteroLink();
+		ui->m_pChbStereoLink->setChecked(linked);
 		retSetMixerInputControlValue->setHasStereoLinkControl(false);
-		if (retSetMixerInputControlValue->getSteroLink())
-			emit linkStatusChanged(m_iMixerChannelId, m_channelDirection, true);
+		// only a linked pair needs the master/slave layout; an unlinked pair is
+		// already shown correctly and re-applying it would overwrite the pans
+		if (linked)
+			emit linkStatusLoaded(m_iMixerChannelId, m_channelDirection, true);
 	}
 }
 
 void AudioMixerInputChannelWidget::audioChannelValueChanged() {
-	this->m_pRetSetMixerInputControlValue->setDebug(true);
-	if (this->m_pRetSetMixerInputControlValue->execute() == 0) {
-		m_pRetSetMixerInputControlValue->clean();
-	}
+	if (!m_pRetSetMixerInputControlValue)
+		return;
+	GuiSysex::run("Updating mixer input values", [&]() {
+		this->m_pRetSetMixerInputControlValue->setDebug(true);
+		if (this->m_pRetSetMixerInputControlValue->execute() == 0)
+			m_pRetSetMixerInputControlValue->clean();
+	});
 }
 
 void AudioMixerInputChannelWidget::changeLinkStatus(bool enabled) {
 	this->ui->m_pChbStereoLink->setChecked(enabled);
+	if (!this->m_pRetSetMixerInputControlValue)
+		return;
 	this->m_pRetSetMixerInputControlValue->setSteroLink(enabled);
 	this->m_pUpdateTimer->start();
 }
@@ -392,10 +414,15 @@ void AudioMixerInputChannelWidget::refreshInput() {
 		std::make_unique<GetMixerInputParm>(m_pDevice);
 	getMixerInputParm->setPortId(m_iPortId);
 	getMixerInputParm->setMixerInputNumber(m_iMixerChannelId);
-	m_pMixerInputParm = std::dynamic_pointer_cast<RetSetMixerInputParm>(
-		getMixerInputParm->querySmart());
-	setInput(m_pMixerInputParm->getAudioSourcePortId(),
-			 m_pMixerInputParm->getAudioSourceChannelNumber());
+	m_pMixerInputParm.reset();
+	if (GuiSysex::run("Reading mixer input routing", [&]() {
+			m_pMixerInputParm = std::dynamic_pointer_cast<RetSetMixerInputParm>(
+				getMixerInputParm->querySmart());
+		}) &&
+		m_pMixerInputParm) {
+		setInput(m_pMixerInputParm->getAudioSourcePortId(),
+				 m_pMixerInputParm->getAudioSourceChannelNumber());
+	}
 }
 
 void AudioMixerInputChannelWidget::refreshStatus() {

@@ -70,7 +70,7 @@ class RoutingTableModel : public QAbstractTableModel {
 	Q_OBJECT
 
   public:
-	RoutingTableModel(AudioRoutingWidget *audioRoutingWidget,
+	RoutingTableModel(AudioRoutingWidget *audioRoutingWidget, bool readOnly,
 					  QObject *parent = nullptr);
 
 	void setAudioPatchbayParm(
@@ -129,6 +129,7 @@ class RoutingTableModel : public QAbstractTableModel {
 	std::vector<AudioPortChannelId> m_vRows;
 
 	AudioRoutingWidget *m_pAudioRoutigWidget = nullptr;
+	bool m_bReadOnly = false;
 
 	void eraseColumn(unsigned int column);
 	bool checkConnectionValid(AudioPortChannelId source,

@@ -48,6 +48,9 @@ class MixerPortWidget : public QWidget {
 
   private: // methods
 	void createLayout();
+	void applyLinkStatus(AudioChannelId mixerChannelId,
+					 pk::ChannelDirection channelDirection, bool status,
+					 bool writeChanges);
 
   private slots:
 	void getVolumes();
@@ -60,7 +63,9 @@ class MixerPortWidget : public QWidget {
 
   public slots:
 	void linkStatusChanged(AudioChannelId mixerChannelId,
-						   pk::ChannelDirection channelDirection, bool status);
+							   pk::ChannelDirection channelDirection, bool status);
+	void linkStatusLoaded(AudioChannelId mixerChannelId,
+							  pk::ChannelDirection channelDirection, bool status);
 	void changeChannelConnection();
 
   signals:

@@ -7,6 +7,7 @@
 #include "../sysex/retsetaudioportparm.h"
 #include "../sysex/retsetmixerinputparm.h"
 #include "../sysex/retsetmixeroutputparm.h"
+#include "guisysexguard.h"
 #include "portdisplayhelper.h"
 #include "ui_audioroutingwidget.h"
 #include "views/hierarchicalheaderview.h"
@@ -36,8 +37,10 @@ AudioRoutingWidget::AudioRoutingWidget(Device *device, QWidget *parent)
 	}";
 	ui->m_pTblRouting->setStyleSheet(style);
 	ui->m_pTblRouting->setFocusPolicy(Qt::NoFocus);
-	m_pRoutingTableModel = new RoutingTableModel(this);
-	loadHeaderStructure();
+	m_pRoutingTableModel =
+		new RoutingTableModel(this, m_pDevice->isWriteGuardEnabled());
+	GuiSysex::run("Loading audio routing headers",
+				   [&]() { loadHeaderStructure(); });
 	ui->m_pTblRouting->setModel(m_pRoutingTableModel);
 	connect(m_pRoutingTableModel, &RoutingTableModel::modelDataChanged, this,
 			&AudioRoutingWidget::modelDataChanged);
@@ -207,16 +210,26 @@ void AudioRoutingWidget::loadTableData() {
 	// Audio Channels
 	for (unsigned int i = 0; i < m_iNumberOfAudioPorts; i++) {
 		getAudioPatchdayParm->setPortId(i + 1);
-		std::shared_ptr<RetSetAudioPatchbayParm> retSetAudioPatchbayParm =
-			std::dynamic_pointer_cast<RetSetAudioPatchbayParm>(
-				getAudioPatchdayParm->querySmart());
-		m_pRoutingTableModel->addAudioPatches(
-			retSetAudioPatchbayParm->getAudioPatchbayConfiguration());
+		std::shared_ptr<RetSetAudioPatchbayParm> retSetAudioPatchbayParm;
+		if (GuiSysex::run("Reading audio patchbay", [&]() {
+				retSetAudioPatchbayParm =
+					std::dynamic_pointer_cast<RetSetAudioPatchbayParm>(
+						getAudioPatchdayParm->querySmart());
+			}) &&
+			retSetAudioPatchbayParm) {
+			m_pRoutingTableModel->addAudioPatches(
+				retSetAudioPatchbayParm->getAudioPatchbayConfiguration());
+		}
 	}
 	// Mixer Channels
 	std::shared_ptr<MixerSink> mixerConnections = std::make_shared<MixerSink>();
-	std::shared_ptr<AudioMixerInputChannels> audioMixerInputChannels =
-		m_pDevice->getAudioMixerInputChannels();
+	std::shared_ptr<AudioMixerInputChannels> audioMixerInputChannels;
+	if (!GuiSysex::run("Reading mixer input routing", [&]() {
+			audioMixerInputChannels = m_pDevice->getAudioMixerInputChannels();
+		}) ||
+		!audioMixerInputChannels) {
+		return;
+	}
 	for (auto mixerInputParmPair : *audioMixerInputChannels) {
 		MixerSource portSources;
 		AudioPortChannelId sinkAudioPortChannelId = mixerInputParmPair.first;
@@ -232,8 +245,13 @@ void AudioRoutingWidget::loadTableData() {
 			std::pair<AudioPortChannelId, std::map<AudioPortChannelId, bool>>(
 				sinkAudioPortChannelId, portSources));
 	}
-	std::shared_ptr<AudioMixerOutputChannels> audioMixerOutputChannels =
-		m_pDevice->getAudioMixerOutputChannels();
+	std::shared_ptr<AudioMixerOutputChannels> audioMixerOutputChannels;
+	if (!GuiSysex::run("Reading mixer output routing", [&]() {
+			audioMixerOutputChannels = m_pDevice->getAudioMixerOutputChannels();
+		}) ||
+		!audioMixerOutputChannels) {
+		return;
+	}
 	for (auto mixerOutputParmPair : *audioMixerOutputChannels) {
 		std::shared_ptr<RetSetMixerOutputParm> mixerOutput =
 			mixerOutputParmPair.second;
@@ -289,7 +307,8 @@ bool AudioRoutingWidget::modelDataChanged(__attribute__((unused))
 bool AudioRoutingWidget::modifyMixerSinkConnection(
 	std::shared_ptr<AudioRoutingChannel> sourceChannel, AudioPortChannelId sink,
 	bool value) {
-	try {
+	bool changed = false;
+	GuiSysex::run("Changing mixer input routing", [&]() {
 		std::shared_ptr<RetSetMixerInputParm> retSetMixerInputParm =
 			m_pDevice->getAudioMixerInputChannels()->at(sink);
 		retSetMixerInputParm->setDebug(true);
@@ -297,25 +316,24 @@ bool AudioRoutingWidget::modifyMixerSinkConnection(
 			value ? sourceChannel->audioPortId : 0);
 		retSetMixerInputParm->setAudioSourceChannelNumber(
 			value ? sourceChannel->auioChannelId : 0);
-		return (retSetMixerInputParm->execute() == 0);
-	} catch (...) {
-		return false;
-	}
+		changed = (retSetMixerInputParm->execute() == 0);
+	});
+	return changed;
 }
 
 bool AudioRoutingWidget::modifyMixerSourceConnection(
 	AudioPortChannelId source, std::shared_ptr<AudioRoutingChannel> sinkChannel,
 	bool value) {
-	try {
+	bool changed = false;
+	GuiSysex::run("Changing mixer output routing", [&]() {
 		std::shared_ptr<RetSetMixerOutputParm> retSetMixerOutpuParm =
 			m_pDevice->getAudioMixerOutputChannels()->at(source);
 		retSetMixerOutpuParm->setDebug(true);
 		retSetMixerOutpuParm->changeMixerOutputAssignment(
 			sinkChannel->auioChannelId, value);
-		return (retSetMixerOutpuParm->execute() == 0);
-	} catch (...) {
-		return false;
-	}
+		changed = (retSetMixerOutpuParm->execute() == 0);
+	});
+	return changed;
 }
 
 bool AudioRoutingWidget::modifyPhysicalPortConnection(
@@ -359,19 +377,22 @@ bool AudioRoutingWidget::modifyPhysicalPortConnection(
 	retSetAudioPatchbayParm->setCmdflags(SysExMessage::QUERY);
 	retSetAudioPatchbayParm->setAudioPatchbayConfiguration(
 		audioPatchbayConfiguration);
-	if (retSetAudioPatchbayParm->execute() == 0) {
-		loadTableData();
-		return true;
-	}
-	return false;
+	bool changed = false;
+	GuiSysex::run("Changing audio patchbay", [&]() {
+		if (retSetAudioPatchbayParm->execute() == 0) {
+			loadTableData();
+			changed = true;
+		}
+	});
+	return changed;
 }
 
 RoutingTableModel::RoutingTableModel(AudioRoutingWidget *audioRoutingWidget,
-									 QObject *parent)
+										 bool readOnly, QObject *parent)
 	: QAbstractTableModel(parent),
 	  m_vColumns(std::vector<AudioPortChannelId>()),
 	  m_vRows(std::vector<AudioPortChannelId>()),
-	  m_pAudioRoutigWidget(audioRoutingWidget) {
+	  m_pAudioRoutigWidget(audioRoutingWidget), m_bReadOnly(readOnly) {
 	m_pHorizontalHeaderItemModel = std::make_unique<QStandardItemModel>(parent);
 	m_pVerticalHeaderItemModel = std::make_unique<QStandardItemModel>(parent);
 }
@@ -447,13 +468,18 @@ Qt::ItemFlags RoutingTableModel::flags(__attribute__((unused))
 	AudioPortChannelId row = m_vRows[static_cast<unsigned long>(index.row())];
 	AudioPortChannelId column =
 		m_vColumns[static_cast<unsigned long>(index.column())];
+	if (m_bReadOnly)
+		return checkConnectionValid(row, column) ? Qt::ItemIsEnabled
+											 : Qt::NoItemFlags;
 	if (!checkConnectionValid(row, column))
 		return Qt::ItemIsUserCheckable;
 	return Qt::ItemIsUserCheckable | Qt::ItemIsEnabled;
 }
 
 bool RoutingTableModel::setData(const QModelIndex &index, const QVariant &value,
-								int role) {
+									int role) {
+	if (m_bReadOnly)
+		return false;
 	if (role == Qt::CheckStateRole) {
 		AudioPortChannelId row =
 			m_vRows[static_cast<unsigned long>(index.row())];

@@ -203,6 +203,7 @@ HEADERS  += \
     src/widgets/audiomixerchannelwidget.h \
     src/widgets/audiomixerinputchannelwidget.h \
     src/widgets/audiomixeroutputchannelwidget.h \
+    src/widgets/guisysexguard.h \
     src/widgets/controls/iconncalc.h \
     src/widgets/controls/pkmixerbutton.h \
     src/widgets/deviceinfowidget.h \

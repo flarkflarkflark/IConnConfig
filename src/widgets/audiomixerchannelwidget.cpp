@@ -3,6 +3,7 @@
 
 #include "../sysex/retsetaudioportparm.h"
 
+#include <QSignalBlocker>
 #include <math.h>
 
 AudioMixerChannelWidget::AudioMixerChannelWidget(
@@ -47,8 +48,18 @@ int AudioMixerChannelWidget::getPanValue() {
 	return this->ui->m_pSlidePan->value();
 }
 
-void AudioMixerChannelWidget::setPanValue(int value) {
+void AudioMixerChannelWidget::setPanValue(int value, bool notify) {
+	if (notify) {
+		this->ui->m_pSlidePan->setValue(value);
+		return;
+	}
+	QSignalBlocker blocker(this->ui->m_pSlidePan);
 	this->ui->m_pSlidePan->setValue(value);
+}
+
+void AudioMixerChannelWidget::showLinkStatus(bool enabled) {
+	QSignalBlocker blocker(this->ui->m_pChbStereoLink);
+	this->ui->m_pChbStereoLink->setChecked(enabled);
 }
 
 int AudioMixerChannelWidget::calculateBalance(int panL, int panR) {

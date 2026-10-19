@@ -32,7 +32,9 @@ class AudioMixerChannelWidget : public QFrame {
 	virtual QString getChannelName();
 
 	int getPanValue();
-	void setPanValue(int value);
+	/** notify=false sets the value without emitting change signals (and so
+	 * without scheduling a device write). */
+	void setPanValue(int value, bool notify = true);
 	int calculateBalance(int panL, int panR);
 	int calculatePanL(int balance);
 	int calculatePanR(int balance);
@@ -58,8 +60,12 @@ class AudioMixerChannelWidget : public QFrame {
 	virtual void initControls();
 
   signals:
+	/** The user toggled stereo link: the new state has to be written. */
 	void linkStatusChanged(AudioChannelId m_iMixerChannelId,
 						   pk::ChannelDirection portDirection, bool status);
+	/** The device reported stereo link: display only, never written back. */
+	void linkStatusLoaded(AudioChannelId m_iMixerChannelId,
+						  pk::ChannelDirection portDirection, bool status);
 	void soloStatusChanged(bool status);
 	void soloPFLStatusChanged(bool status);
 	void invertStatusChanged(bool status);
@@ -73,6 +79,8 @@ class AudioMixerChannelWidget : public QFrame {
 
   public slots:
 	virtual void changeLinkStatus(bool enabled) = 0;
+	/** Shows the link state without writing it to the device. */
+	void showLinkStatus(bool enabled);
 	void changeSoloStatus(bool enabled);
 	void changePFLStatus(bool enabled);
 	void changeInvertStatus(bool enabled);

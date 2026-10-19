@@ -13,6 +13,7 @@
 #include "audiomixerinputchannelwidget.h"
 #include "audiomixeroutputchannelwidget.h"
 #include "centralwidget.h"
+#include "guisysexguard.h"
 #include "mixerportwidget.h"
 #include "portdisplayhelper.h"
 
@@ -80,8 +81,14 @@ void AudioMixerWidget::audioConfigurationChanged(
 	std::unique_ptr<GetMixerParm> getMixerParm =
 		std::make_unique<GetMixerParm>(m_pDevice);
 	getMixerParm->setAudioConfigurationNumber(audioConfigurationNumber);
-	m_pRetSetMixerParm =
-		std::dynamic_pointer_cast<RetSetMixerParm>(getMixerParm->querySmart());
+	m_pRetSetMixerParm.reset();
+	if (!GuiSysex::run("Reading mixer configuration", [&]() {
+			m_pRetSetMixerParm = std::dynamic_pointer_cast<RetSetMixerParm>(
+				getMixerParm->querySmart());
+		}) ||
+		!m_pRetSetMixerParm) {
+		return;
+	}
 	m_pCboMixerConfig->clear();
 	std::vector<AudioConfigurationMixerBlock> mb =
 		m_pRetSetMixerParm->getACMixerBlocks();
@@ -99,8 +106,14 @@ void AudioMixerWidget::mixerConfigurationChanged(
 	// this might work here... qDeleteAll(yourWidget->children());
 	std::unique_ptr<GetMixerPortParm> getMixerPortParm =
 		std::make_unique<GetMixerPortParm>(m_pDevice);
-	m_pRetSetMixerPortParm = std::dynamic_pointer_cast<RetSetMixerPortParm>(
-		getMixerPortParm->querySmart());
+	m_pRetSetMixerPortParm.reset();
+	if (!GuiSysex::run("Reading mixer ports", [&]() {
+			m_pRetSetMixerPortParm = std::dynamic_pointer_cast<RetSetMixerPortParm>(
+				getMixerPortParm->querySmart());
+		}) ||
+		!m_pRetSetMixerPortParm) {
+		return;
+	}
 	std::map<unsigned int, AudioPortMixerBlock> apmb =
 		m_pRetSetMixerPortParm->getAudioPortMixerBlocks();
 
@@ -119,9 +132,16 @@ void AudioMixerWidget::mixerConfigurationChanged(
 				std::unique_ptr<GetMixerOutputControl> getOutputControl =
 					std::make_unique<GetMixerOutputControl>(m_pDevice);
 				getOutputControl->setPortId(portId);
-				std::shared_ptr<RetMixerOutputControl> retMixerOutputControl =
-					std::dynamic_pointer_cast<RetMixerOutputControl>(
-						getOutputControl->querySmart());
+					std::shared_ptr<RetMixerOutputControl> retMixerOutputControl =
+						nullptr;
+					if (!GuiSysex::run("Reading mixer output controls", [&]() {
+							retMixerOutputControl =
+								std::dynamic_pointer_cast<RetMixerOutputControl>(
+									getOutputControl->querySmart());
+						}) ||
+						!retMixerOutputControl) {
+						return;
+					}
 				MixerPortWidget *mpw = new MixerPortWidget(portId, m_pDevice);
 				mpw->setOutputOffset(audioOutputChannelId);
 				QString portName;
@@ -130,9 +150,16 @@ void AudioMixerWidget::mixerConfigurationChanged(
 					std::unique_ptr<GetMixerInputControl> getInputControl =
 						std::make_unique<GetMixerInputControl>(m_pDevice);
 					getInputControl->setPortId(portId);
-					std::shared_ptr<RetMixerInputControl> retMixerInputControl =
-						std::dynamic_pointer_cast<RetMixerInputControl>(
-							getInputControl->querySmart());
+						std::shared_ptr<RetMixerInputControl> retMixerInputControl =
+							nullptr;
+						if (!GuiSysex::run("Reading mixer input controls", [&]() {
+								retMixerInputControl =
+									std::dynamic_pointer_cast<RetMixerInputControl>(
+										getInputControl->querySmart());
+							}) ||
+							!retMixerInputControl) {
+							return;
+						}
 					for (AudioChannelId audioInputChannelId = 1;
 						 audioInputChannelId <= mb.numberOfMixerInputs;
 						 audioInputChannelId++) {
@@ -172,14 +199,13 @@ void AudioMixerWidget::mixerConfigurationChanged(
 						AudioPortChannelId audioPortChannelId =
 							channelIndex(portId, pk::AudioPortClass::MIXER_PORT,
 										 audioOutputChannelId);
-						try {
+						portName = tr("unknown");
+						GuiSysex::run("Reading mixer output name", [&]() {
 							portName = m_pDevice->getAudioMixerOutputChannels()
 										   ->at(audioPortChannelId)
 										   ->getMixerName()
 										   .c_str();
-						} catch (...) {
-							portName = tr("unknown");
-						}
+						});
 					}
 				}
 				mpw->addStretch();
