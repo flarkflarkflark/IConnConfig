@@ -30,13 +30,17 @@ void RetSetAudioPortParm::parseAnswerData() {
 		audioPortConfiguration->audioConfigurationNumber = m_pData->at(offset);
 		audioPortConfiguration->maxAudioChannelsSupported =
 			m_pData->at(offset + 1);
-		audioPortConfiguration->minInputChannelsSupported =
-			m_pData->at(offset + 2);
-		audioPortConfiguration->maxInputChannelsSupported =
-			m_pData->at(offset + 3);
+		// Same order as the port level fields above: output first, then input.
+		// (AUDIO4c analog port: port level 6 out / 4 in, block 6..6 out and
+		// 4..4 in; reading the block as input first put the current value
+		// outside the allowed range.)
 		audioPortConfiguration->minOutputChannelsSupported =
-			m_pData->at(offset + 4);
+			m_pData->at(offset + 2);
 		audioPortConfiguration->maxOutputChannelsSupported =
+			m_pData->at(offset + 3);
+		audioPortConfiguration->minInputChannelsSupported =
+			m_pData->at(offset + 4);
+		audioPortConfiguration->maxInputChannelsSupported =
 			m_pData->at(offset + 5);
 		m_pAudioPortConfigurations[i] = audioPortConfiguration;
 	}
