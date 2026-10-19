@@ -6,6 +6,15 @@ RetCommandList::RetCommandList(Device *device)
 
 RetCommandList::~RetCommandList() { delete m_pSupportedCommands; }
 
+std::vector<int> RetCommandList::getSupportedCommands() {
+	std::vector<int> result;
+	if (!m_pSupportedCommands)
+		return result;
+	for (Command cmd : *m_pSupportedCommands)
+		result.push_back(static_cast<int>(cmd));
+	return result;
+}
+
 bool RetCommandList::isCommandSupported(const Command cmd) {
 	if (!m_pSupportedCommands)
 		return false;

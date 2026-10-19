@@ -26,8 +26,12 @@ QVariant DeviceSelectionTableModel::data(const QModelIndex &index,
 		std::shared_ptr<Device> current =
 			m_pTableData.at(static_cast<unsigned long>(index.row()));
 		switch (index.column()) {
-		case 0:
-			return QString(current->getDeviceName().c_str());
+		case 0: {
+			QString deviceName = QString(current->getDeviceName().c_str());
+			if (current->isExperimentalAudio4c())
+				deviceName.append(" (AUDIO4c experimental, read-only)");
+			return deviceName;
+		}
 		case 1:
 			return QString(current->getModelName().c_str());
 		case 2:

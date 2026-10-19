@@ -129,6 +129,10 @@ class Device {
 	std::string getModelNumber() { return m_sModelNumber; }
 	unsigned int getInPortNumer() { return m_iInPortNumber; }
 	unsigned int getOutPortNumer() { return m_iOutPortNumber; }
+	std::string getDetectedInputPortName() { return m_sDetectedInputPortName; }
+	std::string getDetectedOutputPortName() { return m_sDetectedOutputPortName; }
+	bool isExperimentalAudio4c() const { return m_bExperimentalAudio4c; }
+	bool isReadOnlyMode() const { return m_bReadOnlyMode; }
 
 	MIDISysexValue *getSerialNumber() { return m_pSerialNumber; }
 	MIDISysexValue *getProductId() { return m_pProductId; }
@@ -152,10 +156,13 @@ class Device {
 	void setDebug(bool value);
 	void setDeviceInformation(std::string m_sModelName,
 							  std::string m_sDeviceName);
+	void setDetectedMidiPortNames(const std::string &inputPortName,
+								  const std::string &outputPortName);
 	void setDefault(bool isDefault) { this->m_bIsDefault = isDefault; }
 
 	void setLastSendMessage(BYTE_VECTOR *value);
 	void setLastRetrieveMessage(BYTE_VECTOR *value);
+	void refreshSupportProfile();
 
 	// audio getters
 	std::shared_ptr<RetSetAudioGlobalParm> getGlobalAudioParam() const;
@@ -222,6 +229,10 @@ class Device {
 	std::string m_sFirmwareVersion;
 	std::string m_sHardwareVersion;
 	std::string m_sModelNumber;
+	std::string m_sDetectedInputPortName;
+	std::string m_sDetectedOutputPortName;
+	bool m_bExperimentalAudio4c = false;
+	bool m_bReadOnlyMode = false;
 
 	// MIDI structures
 	std::shared_ptr<RetSetMidiInfo> m_pMidiInfo;

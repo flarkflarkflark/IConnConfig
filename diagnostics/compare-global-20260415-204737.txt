@@ -1,0 +1,92 @@
+AUDIO4c Global Audio Comparative Analysis (read-only)
+sample_rate_decode_status=experimental_unverified
+file_count=2
+file_1.path=diagnostics/audio4c-clock-44100-known.txt
+file_1.external_known_state=44100 (from filename)
+file_1.unique_global_payloads_found=1
+file_1.payload_stable_within_file=true
+file_1.selected_global_payload=01 00 03 02 05 03 01 04 02 01 08 01 04 05 02 04 06 03 04 07 04 04 08 05 06 05 06 06 06 07 06 07 08 06 08
+file_2.path=diagnostics/audio4c-clock-48000-known.txt
+file_2.external_known_state=48000 (from filename)
+file_2.unique_global_payloads_found=1
+file_2.payload_stable_within_file=true
+file_2.selected_global_payload=01 00 03 02 05 03 01 04 02 02 08 01 04 05 02 04 06 03 04 07 04 04 08 05 06 05 06 06 06 07 06 07 08 06 08
+
+[Existing Parser Field Map (RetSetAudioGlobalParm)]
+offset_0=command_version
+offset_1_2=number_of_audio_ports (7-bit joined)
+offset_3=min_audio_frames_buffered
+offset_4=max_audio_frames_buffered
+offset_5=current_audio_frames_buffered
+offset_6=min_allowed_sync_factor
+offset_7=max_allowed_sync_factor
+offset_8=current_sync_factor
+offset_9=number_of_active_audio_configuration
+offset_10=number_of_config_blocks
+offset_11_plus_triplets=config block triplets (configuration_number, bit_depth_code, sample_rate_code)
+note=Field layout is existing parser behavior; AUDIO4c semantics remain hypotheses unless cross-state variation confirms them.
+
+[Global Payload Byte Offset Table]
+offset_0: f1=0X01 f2=0X01 status=stable
+offset_1: f1=0X00 f2=0X00 status=stable
+offset_2: f1=0X03 f2=0X03 status=stable
+offset_3: f1=0X02 f2=0X02 status=stable
+offset_4: f1=0X05 f2=0X05 status=stable
+offset_5: f1=0X03 f2=0X03 status=stable
+offset_6: f1=0X01 f2=0X01 status=stable
+offset_7: f1=0X04 f2=0X04 status=stable
+offset_8: f1=0X02 f2=0X02 status=stable
+offset_9: f1=0X01 f2=0X02 status=diff_or_missing
+offset_10: f1=0X08 f2=0X08 status=stable
+offset_11: f1=0X01 f2=0X01 status=stable
+offset_12: f1=0X04 f2=0X04 status=stable
+offset_13: f1=0X05 f2=0X05 status=stable
+offset_14: f1=0X02 f2=0X02 status=stable
+offset_15: f1=0X04 f2=0X04 status=stable
+offset_16: f1=0X06 f2=0X06 status=stable
+offset_17: f1=0X03 f2=0X03 status=stable
+offset_18: f1=0X04 f2=0X04 status=stable
+offset_19: f1=0X07 f2=0X07 status=stable
+offset_20: f1=0X04 f2=0X04 status=stable
+offset_21: f1=0X04 f2=0X04 status=stable
+offset_22: f1=0X08 f2=0X08 status=stable
+offset_23: f1=0X05 f2=0X05 status=stable
+offset_24: f1=0X06 f2=0X06 status=stable
+offset_25: f1=0X05 f2=0X05 status=stable
+offset_26: f1=0X06 f2=0X06 status=stable
+offset_27: f1=0X06 f2=0X06 status=stable
+offset_28: f1=0X06 f2=0X06 status=stable
+offset_29: f1=0X07 f2=0X07 status=stable
+offset_30: f1=0X06 f2=0X06 status=stable
+offset_31: f1=0X07 f2=0X07 status=stable
+offset_32: f1=0X08 f2=0X08 status=stable
+offset_33: f1=0X06 f2=0X06 status=stable
+offset_34: f1=0X08 f2=0X08 status=stable
+stable_offset_count=34
+differing_offset_count=1
+stable_offsets=0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34
+differing_offsets=9
+
+[Per-File Global Decode]
+file_1.decode_status=known
+file_1.active_audio_configuration=1
+file_1.active_config_sample_rate_offset_candidate=13
+file_1.active_config_sample_rate_code_candidate=5
+file_1.active_config_sample_rate_label_hypothesis=44100 Hz (legacy parser mapping, hypothesis for AUDIO4c)
+file_2.decode_status=known
+file_2.active_audio_configuration=2
+file_2.active_config_sample_rate_offset_candidate=16
+file_2.active_config_sample_rate_code_candidate=6
+file_2.active_config_sample_rate_label_hypothesis=48000 Hz (legacy parser mapping, hypothesis for AUDIO4c)
+
+[External Known State Correlation]
+file_1.external_state_rate=44100
+file_2.external_state_rate=48000
+distinct_external_state_rates=2
+[Sample-Rate Byte Hypotheses]
+offset_9.hypothesis_status=candidate
+offset_9.value_rate_mapping_hypothesis=0X01->44100, 0X02->48000
+offset_9.mapping_confidence=medium-hypothesis (variation aligns to labels)
+correlation_status=global_payload_variation_present
+sample_rate_interpretation=unknown_until_comparative_variation
+instruction=To identify sample-rate byte(s), collect dumps at known hardware rates: 44100, 48000, 96000, then run --compare-audio4c-global.

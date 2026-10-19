@@ -6,8 +6,9 @@
 InfoTableWidget::InfoTableWidget(
 	QWidget *parent,
 	std::map<SysExMessage::DeviceInfoItem, std::shared_ptr<RetSetInfo>>
-		*retSetInfos)
-	: QWidget(parent), m_pRetSetInfos(retSetInfos) {
+		*retSetInfos,
+	bool readOnly)
+	: QWidget(parent), m_pRetSetInfos(retSetInfos), m_bReadOnly(readOnly) {
 
 	QGridLayout *lo = new QGridLayout();
 	QPalette qp;
@@ -35,7 +36,7 @@ InfoTableWidget::InfoTableWidget(
 			name->setForeground(qp.dark());
 			name->setFlags(name->flags() & ~Qt::ItemIsEditable);
 
-			if (!info->isItemEditable()) {
+			if (m_bReadOnly || !info->isItemEditable()) {
 				value->setFlags(value->flags() & ~Qt::ItemIsEditable);
 				value->setForeground(qp.dark());
 			}
@@ -45,8 +46,10 @@ InfoTableWidget::InfoTableWidget(
 			++i;
 		}
 		lo->addWidget(m_pTableWidget, 0, 0);
-		connect(m_pTableWidget, SIGNAL(cellChanged(int, int)), this,
-				SLOT(onDeviceInfoChanged(int, int)));
+		if (!m_bReadOnly) {
+			connect(m_pTableWidget, SIGNAL(cellChanged(int, int)), this,
+					SLOT(onDeviceInfoChanged(int, int)));
+		}
 	}
 }
 

@@ -1,0 +1,130 @@
+iConnConfig Device Diagnostics
+generated_at=2026-04-15T19:37:12
+device_name=flarkAUDIO4c
+model_name=AUDIO4c
+model_number=icaudio4c
+serial_number=00000AFA
+product_id=0X0C
+experimental_audio4c=true
+read_only_mode=true
+
+[MIDI Ports]
+input_port_index=3
+output_port_index=3
+input_port_name=AUDIO4c:AUDIO4c USB2 40:1
+output_port_name=AUDIO4c:AUDIO4c USB2 40:1
+
+[Command List]
+0X05 GET_INFO_LIST
+0X07 GET_INFO
+0X09 GET_RESET_LIST
+0X0B GET_SAVE_RESTORE_LIST
+0X10 RESET
+0X11 SAVE_RESTORE
+0X12 GET_GIZMO_COUNT
+0X14 GET_GIZMO_INFO
+0X18 UNKNOWN_COMMAND
+0X20 GET_MIDI_INFO
+0X22 GET_MIDI_PORT_INFO
+0X24 GET_MIDI_PORT_FILTER
+0X26 GET_MIDI_PORT_REMAP
+0X28 GET_MIDI_PORT_ROUTE
+0X2A GET_MIDI_PORT_DETAIL
+0X2E GET_USB_HOST_MIDI_DETAIL
+0X70 UNKNOWN_COMMAND
+0X3C GET_AUDIO_CHANNEL_NAME
+0X3E GET_AUDIO_PORT_METER_VALUE
+0X40 GET_AUDIO_GLOBAL_PARM
+0X42 GET_AUDIO_PORT_PARM
+0X44 GET_AUDIO_DEVICE_PARM
+0X46 GET_AUDIO_CONTROL_PARM
+0X48 GET_AUDIO_CONTROL_DETAIL
+0X4A GET_AUDIO_CONTROL_DETAIL_VALUE
+0X4C GET_AUDIO_CLOCK_PARM
+0X4E GET_AUDIO_PATCHBAY_PARM
+0X50 GET_MIXER_PARM
+0X52 GET_MIXER_PORT_PARM
+0X54 GET_MIXER_INPUT_PARM
+0X56 GET_MIXER_OUTPUT_PARM
+0X58 GET_MIXER_INPUT_CONTROL
+0X5A GET_MIXER_OUTPUT_CONTROL
+0X5C GET_MIXER_INPUT_CONTROL_VALUE
+0X5E GET_MIXER_OUTPUT_CONTROL_VALUE
+0X60 GET_MIXER_METER_VALUE
+0X100 UNKNOWN_COMMAND
+0X102 UNKNOWN_COMMAND
+0X104 UNKNOWN_COMMAND
+
+[Device / Global Info]
+Accessory Name=AUDIO4c
+Manufacturer Name=iConnectivity
+Model Number=icaudio4c
+Serial Number=00000AFA
+Firmware Version=1.0.4
+Hardware Version=1.4
+Name=flarkAUDIO4c
+
+[Supported Audio Commands]
+0X3C GET_AUDIO_CHANNEL_NAME
+0X3E GET_AUDIO_PORT_METER_VALUE
+0X40 GET_AUDIO_GLOBAL_PARM
+0X42 GET_AUDIO_PORT_PARM
+0X44 GET_AUDIO_DEVICE_PARM
+0X46 GET_AUDIO_CONTROL_PARM
+0X48 GET_AUDIO_CONTROL_DETAIL
+0X4A GET_AUDIO_CONTROL_DETAIL_VALUE
+0X4C GET_AUDIO_CLOCK_PARM
+0X4E GET_AUDIO_PATCHBAY_PARM
+0X50 GET_MIXER_PARM
+0X52 GET_MIXER_PORT_PARM
+0X54 GET_MIXER_INPUT_PARM
+0X56 GET_MIXER_OUTPUT_PARM
+0X58 GET_MIXER_INPUT_CONTROL
+0X5A GET_MIXER_OUTPUT_CONTROL
+0X5C GET_MIXER_INPUT_CONTROL_VALUE
+0X5E GET_MIXER_OUTPUT_CONTROL_VALUE
+0X60 GET_MIXER_METER_VALUE
+
+[Audio Global Parameters]
+number_of_audio_ports=3
+audio_frames_buffered_current=3
+audio_frames_buffered_min=2
+audio_frames_buffered_max=5
+sync_factor_current=2
+sync_factor_min=1
+sync_factor_max=4
+active_audio_configuration=2
+
+[Audio Port Parameters]
+port_1.name=USB1
+port_1.type=USB Device
+port_1.input_channels=8
+port_1.output_channels=8
+port_2.name=USB2
+port_2.type=USB Device
+port_2.input_channels=8
+port_2.output_channels=8
+port_3.name=Analog
+port_3.type=Analogue
+port_3.input_channels=4
+port_3.output_channels=6
+
+[Audio Device Parameters]
+port_1.max_controllers=0
+port_2.max_controllers=0
+port_3.max_controllers=3
+
+[Audio Clock Parameters]
+raw_response=f0 00 01 73 7e 00 0c 00 00 00 15 7a 00 31 00 4d 00 0f 01 01 03 01 01 01 00 02 02 01 00 03 02 02 00 44 f7 
+
+[Audio Patchbay Parameters]
+port_1.patchbay_blocks=8
+port_1.patchbay_routes=8
+port_2.patchbay_blocks=8
+port_2.patchbay_routes=8
+port_3.patchbay_blocks=6
+port_3.patchbay_routes=0
+
+[Failed / Unsupported Commands]
+none
+
